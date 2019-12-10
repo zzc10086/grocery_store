@@ -2715,6 +2715,7 @@ function scriptSource(invokeBy) {
                                     _('option', { value: "ks3" }, [_('text', 'ks3（金山）')]),
                                     _('option', { value: "kodo" }, [_('text', 'kodo（七牛）')]),
                                     _('option', { value: "wcs" }, [_('text', 'wcs（网宿）')]),
+                                    _('option', { value: "xycdn" }, [_('text', 'xycdn（迅雷）')]),
                                     _('option', { value: "cos" }, [_('text', 'cos（腾讯）')]),
                                     _('option', { value: "hw" }, [_('text', 'hw(华为)')]),
                                     _('option', { value: "bos" }, [_('text', 'bos（百度）')])
@@ -2800,12 +2801,14 @@ function scriptSource(invokeBy) {
         let uposArr=[
             ["ks3","https://upos-hz-mirrorks3u.acgvideo.com"],
             ["hw","https://upos-hz-mirrorhw.acgvideo.com"],
+            ["xycdn","https://upos-hz-mirrorxycdn.acgvideo.com"],
             ["kodo","https://upos-hz-mirrorkodou.acgvideo.com"],
             ["cos","https://upos-hz-mirrorcosu.acgvideo.com"],
             ["wcs","https://upos-hz-mirrorwcsu.acgvideo.com"],
             ["bos","https://upos-hz-mirrorbosu.acgvideo.com"]
         ];
         //https://upos-hz-mirrorakam.akamaized.net AKAMAI_CDN(海外)
+        //https://upos-hz-mirrorxycdn.acgvideo.com 迅雷CDN
         //https://upos-hz-mirrorks3u.acgvideo.com 金山CDN
         //https://upos-hz-mirrorhw.acgvideo.com 华为CDN
         //https://upos-hz-mirrorwcsu.acgvideo.com 网宿CDN
