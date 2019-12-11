@@ -1,11 +1,12 @@
 // ==UserScript==
-// @name         解除手机端B站区域限制
+// @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
-// @supportURL   https://github.com/zzc10086
+// @supportURL   https://github.com/ipcjs/bilibili-helper/issues
 // @compatible   chrome
+// @compatible   firefox
 // @license      MIT
 // @require      https://static.hdslb.com/js/md5.js
 // @include      *://m.bilibili.com/bangumi/play/ep*
@@ -418,7 +419,16 @@ function scriptSource(invokeBy) {
                                                 }
                                             }
                                             // 同上
-                                        }
+                                        }else if (!window.__INITIAL_STATE__&&target.responseURL.match(util_regex_url('api.bilibili.com/pgc/view/web/season'))){
+                                                let epInfo
+                                                let json=JSON.parse(target.responseText)
+                                                let ss=location.href.match(/[0-9]+/)
+                                                json.result.episodes.forEach((episode,index,episodes)=>{
+                                                    if(episode.id==ss)epInfo=episode
+                                                })
+                                                window.__INITIAL_STATE__={epInfo}
+
+                                       }
                                         if (container.__block_response) {
                                             // 屏蔽并保存response
                                             container.__response = target.response
