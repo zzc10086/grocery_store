@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
-// @supportURL   https://github.com/ipcjs/bilibili-helper/issues
+// @supportURL   https://github.com/zzc10086
 // @compatible   chrome
 // @compatible   firefox
 // @license      MIT
@@ -202,7 +202,7 @@ function scriptSource(invokeBy) {
     const balh_feature_area_limit = (function () {
 
         function isAreaLimitForPlayUrl(json) {
-            return (json.errorcid && json.errorcid == '8986943') || (json.durl && json.durl.length === 1 && json.durl[0].length === 15126 && json.durl[0].size === 124627);
+            return ((json.code!==0 || json.message!== "success")&& json.message !== "不允许播放预览");
         }
 
         function isBangumi(season_type) {
@@ -296,25 +296,53 @@ function scriptSource(invokeBy) {
                             return Promise.reject(e)
                         })
                         .then(data => {
-
                             return replace_upos(data)
                         })
                 }
             })
+            const pcPlayurl = new BilibiliApi({
+                asyncAjax: function (originUrl) {
+                    log('从B站PC网页端服务器拉取视频地址中...')
+                    return util_ajax(originUrl)
+                        .then(data => {
+                        if(!isAreaLimitForPlayUrl(data)){
+                            return data
+                        }else{
+                            alert("代理服务器依旧被限制")
+                            return data
+                        }
+                        })
+                        .catch(e=>{
+                        alert("PC网页端播放地址获取失败")
+                        return Promise.reject(e)
+                    })
+                }
+            })
            return {
                 _playurl: playurl,
+                _pcPlayurl:pcPlayurl,
             };
            })();
 
            function addPlay(playurl) {
-            document.getElementsByClassName('player-wrapper')[0].innerHTML = "";
+               if(document.getElementsByClassName("player-mask relative").length!==0){
+                            $(".player-mask.relative").each(function(index, element){
+                                                    this.remove()
+                            })
+                         }
+               if(util_info.myPlay){
+                   //防止单页面快速切换剧集导致多个视频流下载
+                      location.reload()
+               }
+            document.getElementById('bofqi').innerHTML = "";
+            document.getElementById('bofqi').style="float:left;display:inline-block;z-index:101;";
              return new DPlayer({
-                 container: document.getElementsByClassName('player-wrapper')[0],
-                 autoplay: false,
+                 container: document.getElementById('bofqi'),
+                 autoplay: true,
                  theme: '#FADFA3',
                  loop: false,
                  lang: 'zh-cn',
-                 screenshot: true,
+                 screenshot: false,
                  hotkey: true,
                  preload: 'auto',
                  volume: 0.7,
@@ -397,38 +425,71 @@ function scriptSource(invokeBy) {
                                                 json.data.vipStatus = 1; // 状态, 启用
                                                 container.responseText = JSON.stringify(json)
                                             }
-                                        }else if (target.responseURL.match(util_regex_url('api.bilibili.com/pgc/player/web/playurl'))
-                                            && !util_url_param(target.responseURL, 'balh_ajax')) {
-                                            log('/pgc/player/web/playurl', 'origin', `block: ${container.__block_response}`, target.response)
-                                            if (!container.__redirect) { // 请求没有被重定向, 则需要检测结果是否有区域限制
-                                                let json = target.response
-                                                if (json.code) {
-                                                    container.__block_response = true
-                                                    let url = container.__url
-                                                    bilibiliApis._playurl.asyncAjax(url)
-                                                        .then(data => {
-                                                            if (!data.code) {
-                                                                data = { code: 0, result: data, message: "0" }
-                                                            }
-                                                            log('/pgc/player/web/playurl', 'proxy', data)
-                                                            return data
-                                                        })
-                                                        .compose(dispatchResultTransformer)
-                                                } else {
-
-                                                }
-                                            }
-                                            // 同上
                                         }else if (!window.__INITIAL_STATE__&&target.responseURL.match(util_regex_url('api.bilibili.com/pgc/view/web/season'))){
+                                            //偶尔wiwindow.__INITIAL_STATE__为空,从api中取个一样的放进去
                                                 let epInfo
                                                 let json=JSON.parse(target.responseText)
                                                 let ss=location.href.match(/[0-9]+/)
-                                                json.result.episodes.forEach((episode,index,episodes)=>{
-                                                    if(episode.id==ss)epInfo=episode
-                                                })
+                                                if(target.responseURL.match(/ep_id/)){
+                                                    json.result.episodes.forEach((episode,index,episodes)=>{
+                                                        //ss666形式下获取aid,cid
+                                                        if(episode.id==ss){
+                                                            epInfo=episode
+                                                            epInfo.status=2
+                                                       }
+                                                    })
+                                                 }else{
+                                                     json.result.episodes.forEach((episode,index,episodes)=>{
+                                                         //ep666形式下获取aid,cid
+                                                         if(json.result.season_id==ss){
+                                                             epInfo=episode
+                                                             epInfo.status=2
+                                                         }
+                                                     })
+                                                    }
                                                 window.__INITIAL_STATE__={epInfo}
+                                                json.result.status=2
+                                                container.responseText = JSON.stringify(json)
+
+                                       }else if (container.__url.match(util_regex_url('api.bilibili.com/pgc/player/web/playurl/html5'))
+                                            && !util_url_param(container.__url, 'balh_ajax')) {
+                                            log('/pgc/player/web/playurl')
+                                            // debugger
+                                            let url = container.__url
+                                            url=url.replace(/ep_id=.*/,"cid="+window.__INITIAL_STATE__.epInfo.cid+"&avid="+window.__INITIAL_STATE__.epInfo.aid+"&otype=json&&qn=112")
+                                           if(isAreaLimitForPlayUrl(JSON.parse(target.responseText))){
+                                            bilibiliApis._playurl.asyncAjax(url)
+                                                .then(data => {
+                                                    if (!data.code) {
+                                                        data = {
+                                                            code: 0,
+                                                            result: data,
+                                                            message: "0",
+                                                        }
+                                                    }
+                                                    log('/pgc/player/web/playurl', 'proxy_biliplus(redirect)', data)
+                                                    util_info.myPlay=addPlay(data)
+                                                    return data
+                                                })
+                                                .catch(data =>{
+                                                container.__block_response = true
+                                                dispatchResultTransformer()
+                                            })
+                                       }else{
+                                           url=url.replace(/\/html5/,"")
+                                           bilibiliApis._pcPlayurl.asyncAjax(url)
+                                                .then(data => {
+                                                    log('/pgc/player/web/playurl', 'proxy_bili(redirect)', data)
+                                                    util_info.myPlay=addPlay(data)
+                                                    return data
+                                                })
+                                                .catch(data =>{
+                                                container.__block_response = true
+                                                dispatchResultTransformer()
+                                            })
 
                                        }
+                                    }
                                         if (container.__block_response) {
                                             // 屏蔽并保存response
                                             container.__response = target.response
@@ -457,46 +518,7 @@ function scriptSource(invokeBy) {
                                             container.__block_response = true
                                             return dispatchResultTransformer
                                         }
-                                        if (container.__url.match(util_regex_url('api.bilibili.com/x/player/playurl'))) {
-                                            log('/x/player/playurl')
-                                            // debugger
-                                            bilibiliApis._playurl.asyncAjax(container.__url)
-                                                .then(data => {
-                                                    if (!data.code) {
-                                                        data = {
-                                                            code: 0,
-                                                            data: data,
-                                                            message: "0",
-                                                            ttl: 1
-                                                        }
-                                                    }
-                                                    log('/x/player/playurl', 'proxy', data)
-                                                    return data
-                                                })
-                                                .compose(dispatchResultTransformerCreator())
-                                        } else if (container.__url.match(util_regex_url('api.bilibili.com/pgc/player/web/playurl'))
-                                            && !util_url_param(container.__url, 'balh_ajax')) {
-                                            log('/pgc/player/web/playurl')
-                                            // debugger
-                                            container.__redirect = true // 标记该请求被重定向
-                                            let url = container.__url
-                                            url=url.replace(/ep_id=.*/,"cid="+window.__INITIAL_STATE__.epInfo.cid+"&avid="+window.__INITIAL_STATE__.epInfo.aid+"&otype=json&&qn=112")
-                                            bilibiliApis._playurl.asyncAjax(url)
-                                                .then(data => {
-                                                    if (!data.code) {
-                                                        data = {
-                                                            code: 0,
-                                                            result: data,
-                                                            message: "0",
-                                                        }
-                                                    }
-                                                    log('/pgc/player/web/playurl', 'proxy(redirect)', data)
-                                                    var myPlay=addPlay(data)
-                                                    myPlay.play();
-                                                    return data
-                                                })
-                                                .compose(dispatchResultTransformerCreator())
-                                        }
+                                        
                                     }
                                     return func.apply(target, arguments)
                                 }
@@ -522,17 +544,20 @@ function scriptSource(invokeBy) {
                 enumerable: true,
                 get: () => {
                     log('__INITIAL_STATE__', 'get')
+                    //页面已加载时切换至最后一集出现的标签,需要删除
                     return INITIAL_STATE
                 },
                 set: (value) => {
                     // debugger
                         log('__INITIAL_STATE__', value)
-                        if(value.epInfo.status!==2){
+                    //status为13表示最新集,会被屏蔽.重置为2
+                    if(value.epList){
+                            value.epList.forEach((episode,index,episodes)=>{
+                                                 episode.status=2
+                            })
+                    }
+                    if(value.epInfo){
                             value.epInfo.status=2
-                            if(document.getElementsByClassName("player-mask relative")[0]){
-                            document.getElementsByClassName("player-mask relative")[0].style.display="none"
-                         }
-
                     }
                     INITIAL_STATE=value
                 },
@@ -545,8 +570,9 @@ function scriptSource(invokeBy) {
 
 
         var util_info={
-            upos_server:"",
-            server:"https://www.biliplus.com"
+            upos_server:"wcs",
+            server:"https://www.biliplus.com",
+            myPlay:null
         }
 
 
