@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.3
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/zzc10086
@@ -121,12 +121,14 @@ function scriptSource(invokeBy) {
         let uposArr=[
             ["ks3","https://upos-hz-mirrorks3u.acgvideo.com"],
             ["hw","https://upos-hz-mirrorhw.acgvideo.com"],
+            ["xycdn","https://upos-hz-mirrorxycdn.acgvideo.com"],
             ["kodo","https://upos-hz-mirrorkodou.acgvideo.com"],
             ["cos","https://upos-hz-mirrorcosu.acgvideo.com"],
             ["wcs","https://upos-hz-mirrorwcsu.acgvideo.com"],
             ["bos","https://upos-hz-mirrorbosu.acgvideo.com"]
         ];
         //https://upos-hz-mirrorakam.akamaized.net AKAMAI_CDN(海外)
+        //https://upos-hz-mirrorxycdn.acgvideo.com 迅雷CDN
         //https://upos-hz-mirrorks3u.acgvideo.com 金山CDN
         //https://upos-hz-mirrorhw.acgvideo.com 华为CDN
         //https://upos-hz-mirrorwcsu.acgvideo.com 网宿CDN
@@ -570,7 +572,7 @@ function scriptSource(invokeBy) {
 
 
         var util_info={
-            upos_server:"wcs",
+            upos_server:"xycdn",
             server:"https://www.biliplus.com",
             myPlay:null
         }
