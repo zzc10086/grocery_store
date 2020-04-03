@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.4
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/zzc10086
@@ -16,17 +16,18 @@
 // ==/UserScript==
 
 const log = console.log.bind(console, 'injector:')
+//加载所需外部资源
 const addPlayjs = (function () {
 
         function addPlayjs() {
             let scriptFile = document.createElement('script');
 
-             scriptFile.setAttribute("type","text/javascript");
+//              scriptFile.setAttribute("type","text/javascript");
 
-             scriptFile.setAttribute("src",'https://cdn.bootcss.com/dplayer/1.25.0/DPlayer.min.js');
+//              scriptFile.setAttribute("src",'https://cdn.bootcss.com/dplayer/1.25.0/DPlayer.min.js');
 
-             document.getElementsByTagName("head")[0].appendChild(scriptFile);
-            scriptFile = document.createElement('script');
+//              document.getElementsByTagName("head")[0].appendChild(scriptFile);
+//             scriptFile = document.createElement('script');
 
              scriptFile.setAttribute("type","text/javascript");
 
@@ -36,11 +37,11 @@ const addPlayjs = (function () {
 
         }
         function addPlaycss() {
-            let link = document.createElement("link");
-            link.rel = "stylesheet";
-            link.type = "text/css";
-            link.href = "https://cdn.bootcss.com/dplayer/1.25.0/DPlayer.min.css";
-             document.getElementsByTagName("head")[0].appendChild(link);
+//             let link = document.createElement("link");
+//             link.rel = "stylesheet";
+//             link.type = "text/css";
+//             link.href = "https://cdn.bootcss.com/dplayer/1.25.0/DPlayer.min.css";
+//              document.getElementsByTagName("head")[0].appendChild(link);
 
         }
         addPlayjs()
@@ -336,26 +337,53 @@ function scriptSource(invokeBy) {
                    //防止单页面快速切换剧集导致多个视频流下载
                       location.reload()
                }
-            document.getElementById('bofqi').innerHTML = "";
-            document.getElementById('bofqi').style="float:left;display:inline-block;z-index:101;";
-             return new DPlayer({
-                 container: document.getElementById('bofqi'),
-                 autoplay: true,
-                 theme: '#FADFA3',
-                 loop: false,
-                 lang: 'zh-cn',
-                 screenshot: false,
-                 hotkey: true,
-                 preload: 'auto',
-                 volume: 0.7,
-                 mutex: true,
-                 video: {
-                     url: playurl.result.durl[0].url,
-                     type: 'auto',
-                 },
-             });
+                var flvPlayer;
+               document.getElementsByClassName('player-wrapper')[0].innerHTML = "<video id='flvPlay' controls autoplay></video>";
+                let videoElement = document.getElementById('flvPlay');
+                videoElement.style="float:left;Width:"+window.screen.availWidth+"px";
+               let playurllist=new Array();
+               for(let i in playurl.result.durl){
+                   playurllist[i]={
+                       duration: playurl.result.durl[i].length,
+                       filesize: playurl.result.durl[i].size,
+                       url: playurl.result.durl[i].url
+                   };
+               };
+               if (flvjs.isSupported()) {
+        flvPlayer = flvjs.createPlayer({
+            type: 'flv',
+            url: playurl.result.durl[0].url,
+            segments: playurllist
+        });
+        flvPlayer.attachMediaElement(videoElement);
+        flvPlayer.load();
+        flvPlayer.play();
+    }
+                return flvPlayer;
+}
+//              return new DPlayer({
+//                  container: document.getElementById('bofqi'),
+//                  autoplay: true,
+//                  theme: '#FADFA3',
+//                  loop: false,
+//                  lang: 'zh-cn',
+//                  screenshot: false,
+//                  hotkey: true,
+//                  preload: 'auto',
+//                  volume: 0.7,
+//                  mutex: true,
+//                  video: {
+//                      url: playurl.result.durl[0].url,
+//                      type:"auto",
+//                  },
+//                  pluginOptions: {
+//                      flv: {
+//                          type: "flv",
+//                          segments:playurllist,
+//                      },
+//                  },
+//              });
 
-        }
     (function injectXHR() {
             log('XMLHttpRequest的描述符:', Object.getOwnPropertyDescriptor(window, 'XMLHttpRequest'))
             let firstCreateXHR = true
@@ -520,7 +548,7 @@ function scriptSource(invokeBy) {
                                             container.__block_response = true
                                             return dispatchResultTransformer
                                         }
-                                        
+
                                     }
                                     return func.apply(target, arguments)
                                 }
@@ -568,7 +596,7 @@ function scriptSource(invokeBy) {
         replaceINITIAL_STATE()
     })()
 
-    
+
 
 
         var util_info={
