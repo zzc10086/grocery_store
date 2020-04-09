@@ -309,7 +309,7 @@ function scriptSource(invokeBy) {
                 var flvPlayer;
                document.getElementsByClassName('player-wrapper')[0].innerHTML = "<video id='flvPlay' controls autoplay></video>";
                 let videoElement = document.getElementById('flvPlay');
-                videoElement.style="float:left;Width:"+window.screen.availWidth+"px";
+                videoElement.style="float:left;Width:100%";
                let playurllist=new Array();
                for(let i in playurl.result.durl){
                    playurllist[i]={
