@@ -9,6 +9,7 @@
 // @compatible   firefox
 // @license      MIT
 // @require      https://static.hdslb.com/js/md5.js
+// @require      https://cdn.bootcss.com/flv.js/1.5.0/flv.min.js
 // @include      *://m.bilibili.com/bangumi/play/ep*
 // @include      *://m.bilibili.com/bangumi/play/ss*
 // @run-at       document-start
@@ -16,38 +17,6 @@
 // ==/UserScript==
 
 const log = console.log.bind(console, 'injector:')
-//加载所需外部资源
-const addPlayjs = (function () {
-
-        function addPlayjs() {
-            let scriptFile = document.createElement('script');
-
-//              scriptFile.setAttribute("type","text/javascript");
-
-//              scriptFile.setAttribute("src",'https://cdn.bootcss.com/dplayer/1.25.0/DPlayer.min.js');
-
-//              document.getElementsByTagName("head")[0].appendChild(scriptFile);
-//             scriptFile = document.createElement('script');
-
-             scriptFile.setAttribute("type","text/javascript");
-
-             scriptFile.setAttribute("src",'https://cdn.bootcss.com/flv.js/1.5.0/flv.js');
-
-             document.getElementsByTagName("head")[0].appendChild(scriptFile);
-
-        }
-        function addPlaycss() {
-//             let link = document.createElement("link");
-//             link.rel = "stylesheet";
-//             link.type = "text/css";
-//             link.href = "https://cdn.bootcss.com/dplayer/1.25.0/DPlayer.min.css";
-//              document.getElementsByTagName("head")[0].appendChild(link);
-
-        }
-        addPlayjs()
-        addPlaycss()
-    })()
-
 function injector() {
     if (document.getElementById('balh-injector-source')) {
         log(`脚本已经注入过, 不需要执行`)
