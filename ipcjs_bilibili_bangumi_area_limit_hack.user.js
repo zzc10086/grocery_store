@@ -1,19 +1,18 @@
 // ==UserScript==
 // @name         解除B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      7.8.0.1
+// @version      7.9.3.1
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
-// @supportURL   https://github.com/ipcjs/bilibili-helper/issues
+// @supportURL   https://github.com/ipcjs/bilibili-helper/blob/user.js/bilibili_bangumi_area_limit_hack.md
 // @compatible   chrome
 // @compatible   firefox
 // @license      MIT
 // @require      https://static.hdslb.com/js/md5.js
 // @include      *://www.bilibili.com/video/av*
+// @include      *://www.bilibili.com/video/BV*
 // @include      *://www.bilibili.com/bangumi/play/ep*
 // @include      *://www.bilibili.com/bangumi/play/ss*
-// @include      *://m.bilibili.com/bangumi/play/ep*
-// @include      *://m.bilibili.com/bangumi/play/ss*
 // @include      *://bangumi.bilibili.com/anime/*
 // @include      *://bangumi.bilibili.com/movie/*
 // @include      *://www.bilibili.com/bangumi/media/md*
@@ -87,7 +86,7 @@ function scriptSource(invokeBy) {
     const r_text = {
         ok: { en: 'OK', zh_cn: '确定', },
         close: { en: 'Close', zh_cn: '关闭' },
-        welcome_to_acfun: '<p><b>缺B乐 了解下？</b></p><br><p>PS: A站白屏/播放卡顿/被区域限制等问题，可以通过安装 <a href="https://github.com/esterTion/AcFun-HTML5-Player">AcFun HTML5 Player</a> 解决</p>',
+        welcome_to_acfun: '<p><b>缺B乐 了解下？</b></p>',
         version_remind: ``,
     }
     const _t = (key) => {
@@ -105,6 +104,7 @@ function scriptSource(invokeBy) {
         url: {
             issue: 'https://github.com/ipcjs/bilibili-helper/issues',
             issue_new: 'https://github.com/ipcjs/bilibili-helper/issues/new',
+            readme: 'https://github.com/ipcjs/bilibili-helper/blob/user.js/bilibili_bangumi_area_limit_hack.md#%E8%A7%A3%E9%99%A4b%E7%AB%99%E5%8C%BA%E5%9F%9F%E9%99%90%E5%88%B6',
         },
         script: {
             is_dev: GM_info.script.name.includes('.dev'),
@@ -156,6 +156,24 @@ function scriptSource(invokeBy) {
     }
     const util_str_to_c_like = (str) => {
         return str.replace(/[A-Z]/g, (a) => `_${a.toLowerCase()}`).replace(/^_/, "")
+    }
+    // https://greasyfork.org/zh-CN/scripts/398535-bv2av/code
+    const util_str_bv2aid = function (bv) {
+        var table = 'fZodR9XQDSUm21yCkr6zBqiveYah8bt4xsWpHnJE7jL5VG3guMTKNPAwcF';
+        var tr = {};
+        for (var i = 0; i < 58; ++i) {
+            tr[table[i]] = i;
+        }
+
+        var s = [11, 10, 3, 8, 4, 6];
+        var xor = 177451812;
+        var add = 8728348608;
+
+        var r = 0;
+        for (var i = 0; i < 6; ++i) {
+            r += tr[bv[s[i]]] * (Math.pow(58, i));
+        }
+        return String((r - add) ^ xor);
     }
     const util_obj_key_to_c_like = (obj) => {
         // log(typeof obj, Array.isArray(obj), obj)
@@ -314,10 +332,14 @@ function scriptSource(invokeBy) {
         }
 
         if (window.document.readyState !== 'loading') {
-            util_ui_alert(`${GM_info.script.name} 加载时机不对, 不能保证正常工作\n\n1. 点击'确定', 刷新页面/重载脚本\n2. 若依然出现该提示, 请尝试'硬性重新加载'(快捷键一般为ctrl+f5)\n3. 若还是出现该提示, 请尝试关闭再重新打开该页面\n4. 若反复出现该提示, 请尝试换个浏览器\n`, () => {
+            const msg = `${GM_info.script.name} 加载时机不对, 不能保证正常工作\n\n1. 点击'确定', 刷新页面/重载脚本\n2. 若依然出现该提示, 请尝试'硬性重新加载'(快捷键一般为ctrl+f5)\n3. 若还是出现该提示, 请尝试关闭再重新打开该页面\n4. 若反复出现该提示, 请尝试换个浏览器\n`
+            /*
+            util_ui_alert(msg, () => {
                 location.reload(true)
             })
+            */
             // throw new Error('unit_init must run at loading, current is ' + document.readyState)
+            util_warn(msg)
         }
 
         window.document.addEventListener('DOMContentLoaded', dclCreator(RUN_AT.DOM_LOADED))
@@ -326,7 +348,7 @@ function scriptSource(invokeBy) {
 
         const util_init = function (func, priority = PRIORITY.DEFAULT, runAt = RUN_AT.DOM_LOADED, always = false) {
             func = util_func_catched(func)
-            if (util_init.atRun < runAt) { // 若还没运行到runAt指定的状态, 则放到队列里去
+            if (util_init.atRun < runAt) { // 若还没运行到runAt指定的状态, 则放到队列里去 
                 callbacks[runAt].push({
                     priority,
                     index: callbacks[runAt].length, // 使用callback数组的长度, 作为添加元素的index属性
@@ -541,7 +563,7 @@ function scriptSource(invokeBy) {
     const Promise = window.Promise // 在某些情况下, 页面中会修改window.Promise... 故我们要备份一下原始的Promise
     const util_promise_plus = (function () {
         /**
-        * 模仿RxJava中的compose操作符
+        * 模仿RxJava中的compose操作符  
         * @param transformer 转换函数, 传入Promise, 返回Promise; 若为空, 则啥也不做
         */
         Promise.prototype.compose = function (transformer) {
@@ -611,7 +633,7 @@ function scriptSource(invokeBy) {
         }
     }
     /**
-     * 创建元素的快捷方法:
+     * 创建元素的快捷方法: 
      * 1. type, props, children
      * 2. type, props, innerHTML
      * 3. 'text', text
@@ -900,7 +922,7 @@ function scriptSource(invokeBy) {
         player: () => location.href.includes('www.bilibili.com/blackboard/html5player'),
         // 在av页面中的iframe标签形式的player
         player_in_av: util_func_catched(() => util_page.player() && window.top.location.href.includes('www.bilibili.com/video/av'), (e) => log(e), false),
-        av: () => location.href.includes('www.bilibili.com/video/av'),
+        av: () => location.href.includes('www.bilibili.com/video/av') || location.href.includes('www.bilibili.com/video/BV'),
         av_new: function () { return this.av() && (window.__playinfo__ || window.__playinfo__origin) },
         bangumi: () => location.href.match(new RegExp('^https?://bangumi\\.bilibili\\.com/anime/\\d+/?$')),
         bangumi_md: () => location.href.includes('www.bilibili.com/bangumi/media/md'),
@@ -1051,6 +1073,8 @@ function scriptSource(invokeBy) {
                 },
                 set: (value) => {
                     // debugger
+                    log('__playinfo__', 'set')
+                    // 原始的playinfo为空, 且页面在loading状态, 说明这是html中对playinfo进行的赋值, 这个值可能是有区域限制的, 不能要
                     if (!window.__playinfo__origin && window.document.readyState === 'loading') {
                         log('__playinfo__', 'init in html', value)
                         window.__playinfo__origin = value
@@ -1060,38 +1084,56 @@ function scriptSource(invokeBy) {
                 },
             })
         }
-        function replaceUserState() {
-            window.__PGC_USERSTATE__ORIGIN = window.__PGC_USERSTATE__
-            let userState = undefined
-            Object.defineProperty(window, '__PGC_USERSTATE__', {
+        function modifyGlobalValue(name, modifyFn) {
+            const name_origin = `${name}_origin`
+            window[name_origin] = window[name]
+            let value = undefined
+            Object.defineProperty(window, name, {
                 configurable: true,
                 enumerable: true,
                 get: () => {
-                    return userState
+                    return value
                 },
-                set: (value) => {
-                    util_debug('window.__PGC_USERSTATE__', value)
-                    if (value) {
-                        // 区域限制
-                        // todo      : 调用areaLimit(limit), 保存区域限制状态
-                        // 2019-08-17: 之前的接口还有用, 这里先不保存~~
-                        value.area_limit = 0
-                        // 会员状态
-                        if (balh_config.blocked_vip && value.vip_info) {
-                            value.vip_info.status = 1
-                            value.vip_info.type = 2
-                        }
-                    }
-                    userState = value
+                set: (val) => {
+                    value = modifyFn(val)
                 }
             })
-            if (window.__PGC_USERSTATE__ORIGIN) {
-                window.__PGC_USERSTATE__ = window.__PGC_USERSTATE__ORIGIN
+            if (window[name_origin]) {
+                window[name] = window[name_origin]
             }
-            delete window.__PGC_USERSTATE__ORIGIN
         }
+        function replaceUserState() {
+            modifyGlobalValue('__PGC_USERSTATE__', (value) => {
+                if (value) {
+                    // 区域限制
+                    // todo      : 调用areaLimit(limit), 保存区域限制状态
+                    // 2019-08-17: 之前的接口还有用, 这里先不保存~~
+                    value.area_limit = 0
+                    // 会员状态
+                    if (balh_config.blocked_vip && value.vip_info) {
+                        value.vip_info.status = 1
+                        value.vip_info.type = 2
+                    }
+                }
+                return value
+            })
+        }
+        function replaceInitialState() {
+            modifyGlobalValue('__INITIAL_STATE__', (value) => {
+                if (value && value.epInfo && value.epList && balh_config.blocked_vip) {
+                    for (let ep of [value.epInfo, ...value.epList]) {
+                        // 13貌似表示会员视频, 2为普通视频
+                        if (ep.epStatus === 13) {
+                            log('epStatus 13 => 2', ep)
+                            ep.epStatus = 2
+                        }
+                    }
+                }
+                return value
+            })
+        }
+        replaceInitialState()
         replaceUserState()
-        // 新的av页面, __playinfo__直接放在head中, 这里可以直接读取到
         replacePlayInfo()
     })()
     const balh_feature_area_limit = (function () {
@@ -1557,10 +1599,12 @@ function scriptSource(invokeBy) {
         /** 使用该方法判断是否需要添加module=bangumi参数, 并不准确... */
         function isBangumi(season_type) {
             log(`season_type: ${season_type}`)
-            // 1是动画
-            // 5是电视剧
-            // 2是电影
-            return season_type != null // 有season_type, 就是bangumi?
+            // 1: 动画
+            // 2: 电影
+            // 3: 纪录片
+            // 4: 国创
+            // 5: 电视剧
+            return season_type != null // 存在season_type就是bangumi?
         }
 
         function isBangumiPage() {
@@ -1607,7 +1651,7 @@ function scriptSource(invokeBy) {
             // 若没取到, 则去取av页面的av号
             if (!seasonId) {
                 try {
-                    seasonId = (window.top.location.pathname.match(/\/video\/(av\d+)/) || ['', ''])[1]
+                    seasonId = (window.top.location.pathname.match(/\/video\/((av|BV)\w+)/) || ['', ''])[1]
                 } catch (e) {
                     log(e);
                 }
@@ -1808,13 +1852,15 @@ function scriptSource(invokeBy) {
                     } else if (bangumi === false) { // 移除可能存在的module参数
                         params = params.replace(/&?module=(\w+)/, '')
                     }
+                    // 管他三七二十一, 强行将module=bangumi替换成module=pgc _(:3」∠)_
+                    params = params.replace(/(&?module)=bangumi/, '$1=pgc')
                     return `${balh_config.server}/BPplayurl.php?${params}`;
                 },
                 processProxySuccess: function (data, alertWhenError = true) {
                     // data有可能为null
                     if (data && data.code === -403) {
                         util_ui_pop({
-                            content: `<b>code-403</b>: <i style="font-size:4px;white-space:nowrap;">${JSON.stringify(data)}</i>\n\n当前代理服务器（${balh_config.server}）依然有区域限制\n\n可以考虑进行如下尝试:\n1. 进行“帐号授权”\n2. 换个代理服务器\n3. 耐心等待服务端修复问题\n4. 上报问题: <a href="https://github.com/ipcjs/bilibili-helper/issues/399">code-403问题汇总</a>\n\n点击确定, 打开设置页面`,
+                            content: `<b>code-403</b>: <i style="font-size:4px;white-space:nowrap;">${JSON.stringify(data)}</i>\n\n当前代理服务器（${balh_config.server}）依然有区域限制\n\n可以考虑进行如下尝试:\n1. 进行“帐号授权”\n2. 换个代理服务器\n3. 耐心等待服务端修复问题\n\n点击确定, 打开设置页面`,
                             onConfirm: balh_ui_setting.show,
                         })
                     } else if (data === null || data.code) {
@@ -1889,7 +1935,8 @@ function scriptSource(invokeBy) {
                         .catch(e => {
                             if (e instanceof AjaxException) {
                                 util_ui_player_msg(e)
-                                if (e.code === 1) { // code: 1 表示非番剧视频, 不能使用番剧视频参数
+                                if (e.code === 1 // code: 1 表示非番剧视频, 不能使用番剧视频参数
+                                    || (util_url_param(originUrl, 'module') === 'bangumi' && e.code === -404)) { // 某些番剧视频又不需要加module=bangumi, 详见: https://github.com/ipcjs/bilibili-helper/issues/494
                                     util_ui_player_msg('尝试使用非番剧视频接口拉取视频地址...')
                                     return playurl_by_proxy._asyncAjax(originUrl, false)
                                         .catch(e2 => Promise.reject(e)) // 忽略e2, 返回原始错误e
@@ -2227,12 +2274,18 @@ function scriptSource(invokeBy) {
             let msg = document.createElement('a');
             $errorPanel.insertBefore(msg, $errorPanel.firstChild);
             msg.innerText = '获取番剧页Url中...';
-            let aid = location.pathname.replace(/.*av(\d+).*/, '$1'),
+            let aid = (location.pathname.match('/\/video\/av(\d+)') || ['', ''])[1],
                 page = (location.pathname.match(/\/index_(\d+).html/) || ['', '1'])[1],
                 cid,
                 season_id,
                 episode_id;
             let avData;
+            if (!aid) {
+                let bv = (location.pathname.match(/\/video\/(BV\w+)/) || ['', ''])[1]
+                if (bv) {
+                    aid = util_str_bv2aid(bv)
+                }
+            }
             balh_api_plus_view(aid)
                 .then(function (data) {
                     avData = data;
@@ -2512,7 +2565,7 @@ function scriptSource(invokeBy) {
                     #balh-settings-btn:hover {
                         background: #00a1d6;
                         border-color: #00a1d6;
-                    }
+                    }            
                     #balh-settings-btn .icon-saturn {
                         width: 30px;
                         height: ${size};
@@ -2520,7 +2573,7 @@ function scriptSource(invokeBy) {
                     }
                     #balh-settings-btn:hover .icon-saturn {
                         fill: white;
-                    }
+                    }            
             `)])
             }
             if (indexNav == null) {
@@ -2639,10 +2692,15 @@ function scriptSource(invokeBy) {
                     continueToIssue ? '复制日志成功; 点击确定, 继续提交问题(需要GitHub帐号)\n请把日志粘贴到问题描述中' : '复制成功',
                     continueToIssue ? 0 : 3e3,
                     continueToIssue ? 'button' : undefined,
-                    continueToIssue ? () => window.open(r.url.issue) : undefined)
+                    continueToIssue ? openIssuePage : undefined)
             } else {
                 util_ui_msg.show($(this), '复制失败, 请从下面的文本框手动复制', 5e3)
             }
+        }
+
+        function openIssuePage() {
+            // window.open(r.url.issue)
+            window.open(r.url.readme)
         }
 
         let printSystemInfoOk = false
@@ -2711,15 +2769,15 @@ function scriptSource(invokeBy) {
                                     }
                                 }
                             }, [
-                                    _('option', { value: "" }, [_('text', '不替换')]),
-                                    _('option', { value: "ks3" }, [_('text', 'ks3（金山）')]),
-                                    _('option', { value: "kodo" }, [_('text', 'kodo（七牛）')]),
-                                    _('option', { value: "wcs" }, [_('text', 'wcs（网宿）')]),
-                                    _('option', { value: "xycdn" }, [_('text', 'xycdn（迅雷）')]),
-                                    _('option', { value: "cos" }, [_('text', 'cos（腾讯）')]),
-                                    _('option', { value: "hw" }, [_('text', 'hw(华为)')]),
-                                    _('option', { value: "bos" }, [_('text', 'bos（百度）')])
-                                ]),
+                                _('option', { value: "" }, [_('text', '不替换')]),
+                                _('option', { value: "ks3u" }, [_('text', 'ks3（金山）')]),
+                                _('option', { value: "kodou" }, [_('text', 'kodo（七牛）')]),
+                                _('option', { value: "cosu" }, [_('text', 'cos（腾讯）')]),
+                                _('option', { value: "bosu" }, [_('text', 'bos（百度）')]),
+                                _('option', { value: "wcsu" }, [_('text', 'wcs（网宿）')]),
+                                _('option', { value: "xycdn" }, [_('text', 'xycdn（迅雷）')]),
+                                _('option', { value: "hw" }, [_('text', 'hw（251）')]),
+                            ]),
                             _('span', { 'id': 'upos-server-message' })
                         ]), _('br'),
                     ]),
@@ -2751,7 +2809,7 @@ function scriptSource(invokeBy) {
                         _('text', '　'),
                         _('a', { id: 'balh-copy-log', href: 'javascript:;', event: { click: onCopyClick } }, [_('text', '复制日志&问题反馈')]),
                         _('text', '　'),
-                        _('a', { id: 'balh-issue-link', href: r.url.issue, target: '_blank', style: { display: 'none' } }, [_('text', '问题反馈')]),
+                        _('a', { id: 'balh-issue-link', href: 'javascript:;', event: { click: openIssuePage }, style: { display: 'none' } }, [_('text', '问题反馈')]),
                         _('text', '作者: ipcjs esterTion FlandreDaisuki'),
                         _('text', ' 接口：'),
                         _('a', { href: 'https://www.biliplus.com/' }, [_('text', ' BiliPlus ')]),
@@ -2795,7 +2853,7 @@ function scriptSource(invokeBy) {
             main()
         }, util_init.PRIORITY.DEFAULT, util_init.RUN_AT.DOM_LOADED_AFTER)
     }())
-
+    
     function replace_upos(data){
         let replace_url;
         let uposArr=[
@@ -2841,6 +2899,7 @@ function scriptSource(invokeBy) {
         return data;
     }
 
+    
     const balh_mark_serve_check_area_limit_state = (function () {
         if (!util_page.bangumi_md()) {
             return
@@ -2865,6 +2924,7 @@ function scriptSource(invokeBy) {
             'upos_server:', balh_config.upos_server,
             'flv_prefer_ws:', balh_config.flv_prefer_ws,
             'remove_pre_ad:', balh_config.remove_pre_ad,
+            'enable_in_av:', balh_config.enable_in_av,
             'readyState:', document.readyState,
             'isLogin:', balh_feature_sign.isLogin(),
             'isLoginBiliBili:', balh_feature_sign.isLoginBiliBili()
