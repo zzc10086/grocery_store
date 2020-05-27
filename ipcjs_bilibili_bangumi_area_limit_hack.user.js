@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      7.9.3.1
+// @version      7.9.3.2
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/ipcjs/bilibili-helper/blob/user.js/bilibili_bangumi_area_limit_hack.md
@@ -2857,13 +2857,13 @@ function scriptSource(invokeBy) {
     function replace_upos(data){
         let replace_url;
         let uposArr=[
-            ["ks3","https://upos-hz-mirrorks3u.acgvideo.com"],
+            ["ks3u","https://upos-hz-mirrorks3u.acgvideo.com"],
             ["hw","https://upos-hz-mirrorhw.acgvideo.com"],
             ["xycdn","https://upos-hz-mirrorxycdn.acgvideo.com"],
-            ["kodo","https://upos-hz-mirrorkodou.acgvideo.com"],
-            ["cos","https://upos-hz-mirrorcosu.acgvideo.com"],
-            ["wcs","https://upos-hz-mirrorwcsu.acgvideo.com"],
-            ["bos","https://upos-hz-mirrorbosu.acgvideo.com"]
+            ["kodou","https://upos-hz-mirrorkodou.acgvideo.com"],
+            ["cosu","https://upos-hz-mirrorcosu.acgvideo.com"],
+            ["wcsu","https://upos-hz-mirrorwcsu.acgvideo.com"],
+            ["bosu","https://upos-hz-mirrorbosu.acgvideo.com"]
         ];
         //https://upos-hz-mirrorakam.akamaized.net AKAMAI_CDN(海外)
         //https://upos-hz-mirrorxycdn.acgvideo.com 迅雷CDN
