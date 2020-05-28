@@ -89,22 +89,25 @@ function scriptSource(invokeBy) {
     function replace_upos(data){
         let replace_url;
         let uposArr=[
-            ["ks3","https://upos-hz-mirrorks3u.acgvideo.com"],
+            ["ks3u","https://upos-sz-mirrorks3.bilivideo.com"],
+            //https://upos-hz-mirrorks3u.acgvideo.com 金山CDN(403错误)
+            //https://upos-sz-mirrorks3.bilivideo.com 金山CDN
+            //https://upos-sz-mirrorks3c.bilivideo.com 金山CDN
             ["hw","https://upos-hz-mirrorhw.acgvideo.com"],
+            //https://upos-hz-mirrorhw.acgvideo.com 华为CDN
             ["xycdn","https://upos-hz-mirrorxycdn.acgvideo.com"],
-            ["kodo","https://upos-hz-mirrorkodou.acgvideo.com"],
-            ["cos","https://upos-hz-mirrorcosu.acgvideo.com"],
-            ["wcs","https://upos-hz-mirrorwcsu.acgvideo.com"],
-            ["bos","https://upos-hz-mirrorbosu.acgvideo.com"]
+            //https://upos-hz-mirrorxycdn.acgvideo.com 迅雷CDN(证书错误)
+            ["kodou","https://upos-hz-mirrorkodou.acgvideo.com"],
+            //https://upos-hz-mirrorkodou.acgvideo.com 七牛CDN
+            ["cosu","https://upos-hz-mirrorcosu.acgvideo.com"],
+            //https://upos-hz-mirrorcosu.acgvideo.com 腾讯CDN
+            ["wcsu","https://upos-hz-mirrorwcsu.acgvideo.com"],
+            //https://upos-hz-mirrorwcsu.acgvideo.com 网宿CDN
+            ["bosu","https://upos-sz-mirrorbos.bilivideo.com"]
+            //https://upos-hz-mirrorbosu.acgvideo.com 百度CDN(403错误)
+            //https://upos-sz-mirrorbos.bilivideo.com 百度CDN(403错误)
         ];
         //https://upos-hz-mirrorakam.akamaized.net AKAMAI_CDN(海外)
-        //https://upos-hz-mirrorxycdn.acgvideo.com 迅雷CDN
-        //https://upos-hz-mirrorks3u.acgvideo.com 金山CDN
-        //https://upos-hz-mirrorhw.acgvideo.com 华为CDN
-        //https://upos-hz-mirrorwcsu.acgvideo.com 网宿CDN
-        //https://upos-hz-mirrorcosu.acgvideo.com 腾讯CDN
-        //https://upos-hz-mirrorbosu.acgvideo.com 百度CDN
-        //https://upos-hz-mirrorkodou.acgvideo.com 七牛CDN
         let upos_server=util_info.upos_server;
         if(upos_server&&upos_server!=""){
             for(let i in uposArr){
@@ -569,7 +572,7 @@ function scriptSource(invokeBy) {
 
 
         var util_info={
-            upos_server:"xycdn",
+            upos_server:"ks3u",
             server:"https://www.biliplus.com",
             myPlay:null
         }
