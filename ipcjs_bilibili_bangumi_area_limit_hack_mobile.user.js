@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.4.1
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/zzc10086
@@ -215,16 +215,10 @@ function scriptSource(invokeBy) {
                 },
                 transToProxyUrl: function (url, bangumi) {
                     let params = url.split('?')[1];
-                    if (bangumi === undefined) { // 自动判断
-                        // av页面中的iframe标签形式的player, 不是番剧视频
-                        // url中存在season_type的情况
-                        if (window.__INITIAL_STATE__.epInfo.from=="bangumi") {
-                        params += '&module=bangumi'
-                        }
-                    } else if (bangumi === false) { // 移除可能存在的module参数
-                        params = params.replace(/&?module=(\w+)/, '')
-                    }
-                    return util_info.server+"/BPplayurl.php?"+params;
+                    // 管他三七二十一, 强行将module=bangumi替换成module=pgc _(:3」∠)_
+                    params = params.replace(/&?module=(\w+)/, '')
+                    params += '&module=pgc'
+                    return `${util_info.server}/BPplayurl.php?${params}`;
                 },
                 processProxySuccess: function (data, alertWhenError = true) {
                     // data有可能为null
