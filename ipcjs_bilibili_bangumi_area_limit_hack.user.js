@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      7.9.3.2
+// @version      7.9.3.3
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/ipcjs/bilibili-helper/blob/user.js/bilibili_bangumi_area_limit_hack.md
@@ -1219,19 +1219,28 @@ function scriptSource(invokeBy) {
                                             }
                                         } else if (target.responseURL.match(util_regex_url('api.bilibili.com/x/player.so'))) {
                                             // 这个接口的返回数据貌似并不会影响界面...
+                                            const xml = new DOMParser().parseFromString(`<root>${target.responseText.replace(/\&/g, "&amp;")}</root>`, 'text/xml')
                                             if (balh_config.blocked_vip) {
                                                 log('/x/player.so')
-                                                const xml = new DOMParser().parseFromString(`<root>${target.responseText.replace(/\&/g, "&amp;")}</root>`, 'text/xml')
                                                 const vipXml = xml.querySelector('vip')
                                                 if (vipXml) {
                                                     const vip = JSON.parse(vipXml.innerHTML)
                                                     vip.vipType = 2 // 同上
                                                     vip.vipStatus = 1
                                                     vipXml.innerHTML = JSON.stringify(vip)
-                                                    container.responseText = xml.documentElement.innerHTML
-                                                    container.response = container.responseText
                                                 }
                                             }
+                                            const pcdnXml= xml.querySelector('pcdn_loader')
+                                            if(pcdnXml){
+                                                const pcdn = JSON.parse(pcdnXml.innerHTML)
+                                                pcdn.dash.vendor="xl"
+                                                pcdn.flv.vendor="xl"
+                                                pcdn.dash.script_url="\/\/s1.hdslb.com\/bfs\/static\/pcdnjs\/pcdn-xldash-20.05.28.min.js"
+                                                pcdn.flv.script_url="\/\/s1.hdslb.com\/bfs\/static\/pcdnjs\/pcdn-xlflv-20.05.28.min.js"
+                                                pcdnXml.innerHTML = JSON.stringify(pcdn)
+                                            }
+                                                container.responseText = xml.documentElement.innerHTML
+                                                container.response = container.responseText
                                         } else if (target.responseURL.match(util_regex_url('api.bilibili.com/x/player/playurl'))) {
                                             log('/x/player/playurl', 'origin', `block: ${container.__block_response}`, target.response)
                                             // todo      : 当前只实现了r.const.mode.REPLACE, 需要支持其他模式
@@ -2861,16 +2870,20 @@ function scriptSource(invokeBy) {
             //https://upos-hz-mirrorks3u.acgvideo.com 金山CDN(403错误)
             //https://upos-sz-mirrorks3.bilivideo.com 金山CDN
             //https://upos-sz-mirrorks3c.bilivideo.com 金山CDN
-            ["hw","https://upos-hz-mirrorhw.acgvideo.com"],
-            //https://upos-hz-mirrorhw.acgvideo.com 华为CDN
+            ["hw","https://upos-sz-mirrorhw.bilivideo.com"],
+            //https://upos-hz-mirrorhw.acgvideo.com 华为CDN(资源权限不足)
+            //https://upos-sz-mirrorhw.bilivideo.com 华为CDN
             ["xycdn","https://upos-hz-mirrorxycdn.acgvideo.com"],
             //https://upos-hz-mirrorxycdn.acgvideo.com 迅雷CDN(证书错误)
-            ["kodou","https://upos-hz-mirrorkodou.acgvideo.com"],
+            ["kodou","https://upos-sz-mirrorkodo.bilivideo.com"],
             //https://upos-hz-mirrorkodou.acgvideo.com 七牛CDN
-            ["cosu","https://upos-hz-mirrorcosu.acgvideo.com"],
+            //https://upos-sz-mirrorkodo.bilivideo.com 七牛CDN
+            ["cosu","https://upos-sz-mirrorcos.bilivideo.com"],
             //https://upos-hz-mirrorcosu.acgvideo.com 腾讯CDN
-            ["wcsu","https://upos-hz-mirrorwcsu.acgvideo.com"],
+            //https://upos-sz-mirrorcos.bilivideo.com 腾讯CDN
+            ["wcsu","https://upos-sz-mirrorwcs.bilivideo.com"],
             //https://upos-hz-mirrorwcsu.acgvideo.com 网宿CDN
+            //https://upos-sz-mirrorwcs.bilivideo.com 网宿CDN
             ["bosu","https://upos-sz-mirrorbos.bilivideo.com"]
             //https://upos-hz-mirrorbosu.acgvideo.com 百度CDN(403错误)
             //https://upos-sz-mirrorbos.bilivideo.com 百度CDN(403错误)
@@ -2957,7 +2970,6 @@ function scriptSource(invokeBy) {
             }
         }
     }
-
     main();
 }
 
