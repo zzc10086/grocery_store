@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      0.4.1
+// @version      0.4.2
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/zzc10086
@@ -65,6 +65,100 @@ function scriptSource(invokeBy) {
         return
     }
 
+    /**
+     * 创建元素的快捷方法:
+     * 1. type, props, children
+     * 2. type, props, innerHTML
+     * 3. 'text', text
+     * @param type string, 标签名; 特殊的, 若为text, 则表示创建文字, 对应的t为文字的内容
+     * @param props object, 属性; 特殊的属性名有: className, 类名; style, 样式, 值为(样式名, 值)形式的object; event, 值为(事件名, 监听函数)形式的object;
+     * @param children array, 子元素; 也可以直接是html文本;
+     */
+    const util_ui_element_creator = (type, props, children) => {
+        let elem = null;
+        if (type === "text") {
+            return document.createTextNode(props);
+        } else {
+            elem = document.createElement(type);
+        }
+        for (let n in props) {
+            if (n === "style") {
+                for (let x in props.style) {
+                    elem.style[x] = props.style[x];
+                }
+            } else if (n === "className") {
+                elem.className = props[n];
+            } else if (n === "event") {
+                for (let x in props.event) {
+                    elem.addEventListener(x, props.event[x]);
+                }
+            } else {
+                elem.setAttribute(n, props[n]);
+            }
+        }
+        if (children) {
+            if (typeof children === 'string') {
+                elem.innerHTML = children;
+            } else {
+                for (let i = 0; i < children.length; i++) {
+                    if (children[i] != null)
+                        elem.appendChild(children[i]);
+                }
+            }
+        }
+        return elem;
+    }
+    const _ = util_ui_element_creator
+
+    const util_cookie = (function () {
+        function getCookies() {
+            var map = document.cookie.split('; ').reduce(function (obj, item) {
+                var entry = item.split('=');
+                obj[entry[0]] = entry[1];
+                return obj;
+            }, {});
+            return map;
+        }
+
+        function getCookie(key) {
+            return getCookies()[key];
+        }
+
+        /**
+         * @param key     key
+         * @param value   为undefined时, 表示删除cookie
+         * @param options 为undefined时, 表示过期时间为3年
+         *          为''时, 表示Session cookie
+         *          为数字时, 表示指定过期时间
+         *          为{}时, 表示指定所有的属性
+         * */
+        function setCookie(key, value, options) {
+            if (typeof options !== 'object') {
+                options = {
+                    domain: '.bilibili.com',
+                    path: '/',
+                    'max-age': value === undefined ? 0 : (options === undefined ? 94608000 : options)
+                };
+            }
+            var c = Object.keys(options).reduce(function (str, key) {
+                return str + '; ' + key + '=' + options[key];
+            }, key + '=' + value);
+            document.cookie = c;
+            return c;
+        }
+
+        return new Proxy({ set: setCookie, get: getCookie, all: getCookies }, {
+            get: function (target, prop) {
+                if (prop in target) return target[prop]
+                return getCookie(prop)
+            },
+            set: function (target, prop, value) {
+                setCookie(prop, value)
+                return true
+            }
+        })
+    }())
+
     const _raw = (str) => str.replace(/(\.|\?)/g, '\\$1')
     const util_regex_url = (url) => new RegExp(`^(https?:)?//${_raw(url)}`)
     const util_regex_url_path = (path) => new RegExp(`^(https?:)?//[\\w\\-\\.]+${_raw(path)}`)
@@ -108,7 +202,7 @@ function scriptSource(invokeBy) {
             //https://upos-sz-mirrorbos.bilivideo.com 百度CDN(403错误)
         ];
         //https://upos-hz-mirrorakam.akamaized.net AKAMAI_CDN(海外)
-        let upos_server=util_info.upos_server;
+        let upos_server=util_cookie.get("balh_");
         if(upos_server&&upos_server!=""){
             for(let i in uposArr){
                 if(uposArr[i][0]==upos_server){
@@ -218,7 +312,7 @@ function scriptSource(invokeBy) {
                     // 管他三七二十一, 强行将module=bangumi替换成module=pgc _(:3」∠)_
                     params = params.replace(/&?module=(\w+)/, '')
                     params += '&module=pgc'
-                    return `${util_info.server}/BPplayurl.php?${params}`;
+                    return `https://www.biliplus.com/BPplayurl.php?${params}`;
                 },
                 processProxySuccess: function (data, alertWhenError = true) {
                     // data有可能为null
@@ -293,20 +387,19 @@ function scriptSource(invokeBy) {
             };
            })();
 
-           function addPlay(playurl) {
+           function addPlayer(playurl) {
                if(document.getElementsByClassName("player-mask relative").length!==0){
-                            $(".player-mask.relative").each(function(index, element){
-                                                    this.remove()
-                            })
-                         }
-               if(util_info.myPlay){
-                   //防止单页面快速切换剧集导致多个视频流下载
-                      location.reload()
+                   $(".player-mask.relative").each(function(index, element){
+                       this.remove()
+                   })
                }
-                var flvPlayer;
+               if(window.flvPlayer){
+                   //防止单页面快速切换剧集导致多个视频流下载
+                   location.reload()
+               }
                document.getElementsByClassName('player-wrapper')[0].innerHTML = "<video id='flvPlay' controls autoplay></video>";
-                let videoElement = document.getElementById('flvPlay');
-                videoElement.style="float:left;Width:100%";
+               let videoElement = document.getElementById('flvPlay');
+               videoElement.style="float:left;Width:100%";
                let playurllist=new Array();
                for(let i in playurl.result.durl){
                    playurllist[i]={
@@ -316,16 +409,15 @@ function scriptSource(invokeBy) {
                    };
                };
                if (flvjs.isSupported()) {
-        flvPlayer = flvjs.createPlayer({
-            type: 'flv',
-            url: playurl.result.durl[0].url,
-            segments: playurllist
-        });
-        flvPlayer.attachMediaElement(videoElement);
-        flvPlayer.load();
-        flvPlayer.play();
-    }
-                return flvPlayer;
+                   window.flvPlayer = flvjs.createPlayer({
+                       type: 'flv',
+                       url: playurl.result.durl[0].url,
+                       segments: playurllist
+                   });
+                   window.flvPlayer.attachMediaElement(videoElement);
+                   window.flvPlayer.load();
+                   window.flvPlayer.play();
+               }
 }
 //              return new DPlayer({
 //                  container: document.getElementById('bofqi'),
@@ -464,7 +556,7 @@ function scriptSource(invokeBy) {
                                                         }
                                                     }
                                                     log('/pgc/player/web/playurl', 'proxy_biliplus(redirect)', data)
-                                                    util_info.myPlay=addPlay(data)
+                                                    addPlayer(data)
                                                     return data
                                                 })
                                                 .catch(data =>{
@@ -476,7 +568,7 @@ function scriptSource(invokeBy) {
                                            bilibiliApis._pcPlayurl.asyncAjax(url)
                                                 .then(data => {
                                                     log('/pgc/player/web/playurl', 'proxy_bili(redirect)', data)
-                                                    util_info.myPlay=addPlay(data)
+                                                    addPlayer(data)
                                                     return data
                                                 })
                                                 .catch(data =>{
@@ -530,46 +622,56 @@ function scriptSource(invokeBy) {
     })()
 
 
+        //触发平台检查发回页面是脚本,会添加失败,所以用定时器
+        setTimeout(()=>{
+            if($("upos-server").length<1){
+                $(".media-option-tab").append(_('select', {
+                    class: 'upos-server',
+                    event: {
+                        change: function () {
+                            util_cookie.set("balh_",$(".upos-server option:selected").val(),)
+                            location.reload()
+                        }
+                    }
+                }, [
+                    _('option', { value: "" }, [_('text', '不替换')]),
+                    _('option', { value: "ks3u" }, [_('text', 'ks3（金山）')]),
+                    _('option', { value: "kodou" }, [_('text', 'kodo（七牛）')]),
+                    _('option', { value: "cosu" }, [_('text', 'cos（腾讯）')]),
+                    _('option', { value: "bosu" }, [_('text', 'bos（百度）')]),
+                    _('option', { value: "wcsu" }, [_('text', 'wcs（网宿）')]),
+                    _('option', { value: "xycdn" }, [_('text', 'xycdn（迅雷）')]),
+                    _('option', { value: "hw" }, [_('text', 'hw（251）')]),
+                ]))
+                $(".upos-server").val(util_cookie.get("balh_"))
+            }
+        },2000)
 
     const balh_feature_area_limit_new = (function () {
-
-        function replaceINITIAL_STATE() {
-            let INITIAL_STATE = undefined
-            Object.defineProperty(window, '__INITIAL_STATE__', {
-                configurable: true,
-                enumerable: true,
-                get: () => {
-                    log('__INITIAL_STATE__', 'get')
-                    //页面已加载时切换至最后一集出现的标签,需要删除
-                    return INITIAL_STATE
-                },
-                set: (value) => {
-                    // debugger
-                        log('__INITIAL_STATE__', value)
-                    //status为13表示最新集,会被屏蔽.重置为2
-                    if(value.epList){
-                            value.epList.forEach((episode,index,episodes)=>{
-                                                 episode.status=2
-                            })
-                    }
-                    if(value.epInfo){
-                            value.epInfo.status=2
-                    }
-                    INITIAL_STATE=value
-                },
-            })
-        }
-        replaceINITIAL_STATE()
+        let INITIAL_STATE
+        Object.defineProperty(window, '__INITIAL_STATE__', {
+            configurable: true,
+            enumerable: true,
+            get: ()=>{return INITIAL_STATE},
+            set: (value) => {
+                // debugger
+                log('__INITIAL_STATE__', value)
+                //status为13表示最新集,会被屏蔽.重置为2
+                if(value.epList){
+                    value.epList.forEach((episode,index,episodes)=>{
+                        episode.status=2
+                    })
+                }
+                if(value.epInfo){
+                    value.epInfo.status=2
+                }
+                INITIAL_STATE=value
+                return value
+            }
+        })
     })()
 
 
-
-
-        var util_info={
-            upos_server:"ks3u",
-            server:"https://www.biliplus.com",
-            myPlay:null
-        }
 
 
 
