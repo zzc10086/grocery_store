@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      0.4.2
+// @version      0.4.2.1
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/zzc10086
@@ -395,7 +395,7 @@ function scriptSource(invokeBy) {
                }
                if(window.flvPlayer){
                    //防止单页面快速切换剧集导致多个视频流下载
-                   location.reload()
+                   window.flvPlayer.destroy()
                }
                document.getElementsByClassName('player-wrapper')[0].innerHTML = "<video id='flvPlay' controls autoplay></video>";
                let videoElement = document.getElementById('flvPlay');
@@ -630,6 +630,7 @@ function scriptSource(invokeBy) {
                     event: {
                         change: function () {
                             util_cookie.set("balh_",$(".upos-server option:selected").val(),)
+                            window.flvPlayer.destroy()
                             location.reload()
                         }
                     }
