@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      0.4.2.1
+// @version      0.4.2.2
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/zzc10086
@@ -187,16 +187,20 @@ function scriptSource(invokeBy) {
             //https://upos-hz-mirrorks3u.acgvideo.com 金山CDN(403错误)
             //https://upos-sz-mirrorks3.bilivideo.com 金山CDN
             //https://upos-sz-mirrorks3c.bilivideo.com 金山CDN
-            ["hw","https://upos-hz-mirrorhw.acgvideo.com"],
-            //https://upos-hz-mirrorhw.acgvideo.com 华为CDN
+            ["hw","https://upos-sz-mirrorhw.bilivideo.com"],
+            //https://upos-hz-mirrorhw.acgvideo.com 华为CDN(资源权限不足)
+            //https://upos-sz-mirrorhw.bilivideo.com 华为CDN
             ["xycdn","https://upos-hz-mirrorxycdn.acgvideo.com"],
             //https://upos-hz-mirrorxycdn.acgvideo.com 迅雷CDN(证书错误)
-            ["kodou","https://upos-hz-mirrorkodou.acgvideo.com"],
+            ["kodou","https://upos-sz-mirrorkodo.bilivideo.com"],
             //https://upos-hz-mirrorkodou.acgvideo.com 七牛CDN
-            ["cosu","https://upos-hz-mirrorcosu.acgvideo.com"],
+            //https://upos-sz-mirrorkodo.bilivideo.com 七牛CDN
+            ["cosu","https://upos-sz-mirrorcos.bilivideo.com"],
             //https://upos-hz-mirrorcosu.acgvideo.com 腾讯CDN
-            ["wcsu","https://upos-hz-mirrorwcsu.acgvideo.com"],
+            //https://upos-sz-mirrorcos.bilivideo.com 腾讯CDN
+            ["wcsu","https://upos-sz-mirrorwcs.bilivideo.com"],
             //https://upos-hz-mirrorwcsu.acgvideo.com 网宿CDN
+            //https://upos-sz-mirrorwcs.bilivideo.com 网宿CDN
             ["bosu","https://upos-sz-mirrorbos.bilivideo.com"]
             //https://upos-hz-mirrorbosu.acgvideo.com 百度CDN(403错误)
             //https://upos-sz-mirrorbos.bilivideo.com 百度CDN(403错误)
