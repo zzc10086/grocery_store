@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      0.4.2.2
+// @version      0.4.3
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/zzc10086
@@ -9,7 +9,7 @@
 // @compatible   firefox
 // @license      MIT
 // @require      https://static.hdslb.com/js/md5.js
-// @require      https://cdn.bootcss.com/flv.js/1.5.0/flv.min.js
+// @require      https://s1.hdslb.com/bfs/static/player/main/video.ac688598.js
 // @include      *://m.bilibili.com/bangumi/play/ep*
 // @include      *://m.bilibili.com/bangumi/play/ss*
 // @run-at       document-start
@@ -397,32 +397,37 @@ function scriptSource(invokeBy) {
                        this.remove()
                    })
                }
-               if(window.flvPlayer){
-                   //防止单页面快速切换剧集导致多个视频流下载
-                   window.flvPlayer.destroy()
+               //防止多个流加载
+               if(window.player){
+                   
                }
                document.getElementsByClassName('player-wrapper')[0].innerHTML = "<video id='flvPlay' controls autoplay></video>";
                let videoElement = document.getElementById('flvPlay');
                videoElement.style="float:left;Width:100%";
-               let playurllist=new Array();
-               for(let i in playurl.result.durl){
-                   playurllist[i]={
-                       duration: playurl.result.durl[i].length,
-                       filesize: playurl.result.durl[i].size,
-                       url: playurl.result.durl[i].url
-                   };
-               };
-               if (flvjs.isSupported()) {
-                   window.flvPlayer = flvjs.createPlayer({
-                       type: 'flv',
-                       url: playurl.result.durl[0].url,
-                       segments: playurllist
-                   });
-                   window.flvPlayer.attachMediaElement(videoElement);
-                   window.flvPlayer.load();
-                   window.flvPlayer.play();
-               }
-}
+               let dash=dashjs.MediaPlayer().create()
+               dash.initialize($("#flvPlay")[0],playurl.result.dash,false,false)
+               dash.setP2pType("xl-eg")
+               return window.player=dash
+           }
+//                let playurllist=new Array();
+//                for(let i in playurl.result.durl){
+//                    playurllist[i]={
+//                        duration: playurl.result.durl[i].length,
+//                        filesize: playurl.result.durl[i].size,
+//                        url: playurl.result.durl[i].url
+//                    };
+//                };
+//                if (flvjs.isSupported()) {
+//                    window.player = flvjs.createPlayer({
+//                        type: 'flv',
+//                        url: playurl.result.durl[0].url,
+//                        segments: playurllist
+//                    });
+//                    window.player.attachMediaElement(videoElement);
+//                    window.player.load();
+//                    window.player.play();
+//                }
+// }
 //              return new DPlayer({
 //                  container: document.getElementById('bofqi'),
 //                  autoplay: true,
@@ -548,7 +553,7 @@ function scriptSource(invokeBy) {
                                             log('/pgc/player/web/playurl')
                                             // debugger
                                             let url = container.__url
-                                            url=url.replace(/ep_id=.*/,"cid="+window.__INITIAL_STATE__.epInfo.cid+"&avid="+window.__INITIAL_STATE__.epInfo.aid+"&otype=json&&qn=112")
+                                            url=url.replace(/ep_id=.*/,"cid="+window.__INITIAL_STATE__.epInfo.cid+"&avid="+window.__INITIAL_STATE__.epInfo.aid+"&otype=json&qn=112&fnver=0&fnval=16")
                                            if(isAreaLimitForPlayUrl(JSON.parse(target.responseText))){
                                             bilibiliApis._playurl.asyncAjax(url)
                                                 .then(data => {
@@ -634,7 +639,6 @@ function scriptSource(invokeBy) {
                     event: {
                         change: function () {
                             util_cookie.set("balh_",$(".upos-server option:selected").val(),)
-                            window.flvPlayer.destroy()
                             location.reload()
                         }
                     }
