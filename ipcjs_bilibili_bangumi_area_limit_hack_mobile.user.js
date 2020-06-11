@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      0.4.3
+// @version      0.4.3.1
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/zzc10086
@@ -392,21 +392,14 @@ function scriptSource(invokeBy) {
            })();
 
            function addPlayer(playurl) {
-               if(document.getElementsByClassName("player-mask relative").length!==0){
-                   $(".player-mask.relative").each(function(index, element){
-                       this.remove()
-                   })
-               }
-               //防止多个流加载
-               if(window.player){
-                   
-               }
-               document.getElementsByClassName('player-wrapper')[0].innerHTML = "<video id='flvPlay' controls autoplay></video>";
-               let videoElement = document.getElementById('flvPlay');
-               videoElement.style="float:left;Width:100%";
+               if($("#flvPlay").length==0)$("#bofqi").html(_('video',{id:"flvPlay",style:{"z-index":101,float:"left",width:"100%"},controls:"ture",autoplay:"autoplay"}));
                let dash=dashjs.MediaPlayer().create()
                dash.initialize($("#flvPlay")[0],playurl.result.dash,false,false)
                dash.setP2pType("xl-eg")
+               if($(".player-mask.relative").length!==0)$(".player-mask.relative").css("display","none")
+               if($(".no-source").length!==0)$(".no-source").css("display","none")
+               if($(".video-length").length!==0)$(".video-length").css("display","none")
+               $("#bofqi").css("display","")
                return window.player=dash
            }
 //                let playurllist=new Array();
@@ -544,7 +537,7 @@ function scriptSource(invokeBy) {
                                                          }
                                                      })
                                                     }
-                                                window.__INITIAL_STATE__={epInfo}
+                                                if(!window.__INITIAL_STATE__)window.__INITIAL_STATE__={"epInfo":epInfo,"episodes":json.result.episodes}
                                                 json.result.status=2
                                                 container.responseText = JSON.stringify(json)
 
@@ -552,6 +545,13 @@ function scriptSource(invokeBy) {
                                             && !util_url_param(container.__url, 'balh_ajax')) {
                                             log('/pgc/player/web/playurl')
                                             // debugger
+                                           if(window.__INITIAL_STATE__.episodes)
+                                               $(".ep-list-pre-container.no-wrap li").each((index,li)=>{
+                                                   if(li.className=="episode-item item-lg single-line cur"){
+                                                       window.__INITIAL_STATE__.epInfo=window.__INITIAL_STATE__.episodes[index]
+                                                       window.__INITIAL_STATE__.epInfo.status=2
+                                                   }
+                                               })
                                             let url = container.__url
                                             url=url.replace(/ep_id=.*/,"cid="+window.__INITIAL_STATE__.epInfo.cid+"&avid="+window.__INITIAL_STATE__.epInfo.aid+"&otype=json&qn=112&fnver=0&fnval=16")
                                            if(isAreaLimitForPlayUrl(JSON.parse(target.responseText))){
@@ -630,6 +630,10 @@ function scriptSource(invokeBy) {
 
     })()
 
+
+    window.unload=()=>{
+window.player
+    }
 
         //触发平台检查发回页面是脚本,会添加失败,所以用定时器
         setTimeout(()=>{
