@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      0.4.3.1
+// @version      0.4.3.2
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/zzc10086
@@ -395,7 +395,7 @@ function scriptSource(invokeBy) {
                if($("#flvPlay").length==0)$("#bofqi").html(_('video',{id:"flvPlay",style:{"z-index":101,float:"left",width:"100%"},controls:"ture",autoplay:"autoplay"}));
                let dash=dashjs.MediaPlayer().create()
                dash.initialize($("#flvPlay")[0],playurl.result.dash,false,false)
-               dash.setP2pType("xl-eg")
+               dash.setP2pType("yf-eg")
                if($(".player-mask.relative").length!==0)$(".player-mask.relative").css("display","none")
                if($(".no-source").length!==0)$(".no-source").css("display","none")
                if($(".video-length").length!==0)$(".video-length").css("display","none")
@@ -525,7 +525,6 @@ function scriptSource(invokeBy) {
                                                         //ss666形式下获取aid,cid
                                                         if(episode.id==ss){
                                                             epInfo=episode
-                                                            epInfo.status=2
                                                        }
                                                     })
                                                  }else{
@@ -533,11 +532,10 @@ function scriptSource(invokeBy) {
                                                          //ep666形式下获取aid,cid
                                                          if(json.result.season_id==ss){
                                                              epInfo=episode
-                                                             epInfo.status=2
                                                          }
                                                      })
                                                     }
-                                                if(!window.__INITIAL_STATE__)window.__INITIAL_STATE__={"epInfo":epInfo,"episodes":json.result.episodes}
+                                                if(!window.__INITIAL_STATE__)window.__INITIAL_STATE__={"epInfo":epInfo,"epList":json.result.episodes}
                                                 json.result.status=2
                                                 container.responseText = JSON.stringify(json)
 
@@ -545,11 +543,10 @@ function scriptSource(invokeBy) {
                                             && !util_url_param(container.__url, 'balh_ajax')) {
                                             log('/pgc/player/web/playurl')
                                             // debugger
-                                           if(window.__INITIAL_STATE__.episodes)
+                                           if(window.__INITIAL_STATE__.epList)
                                                $(".ep-list-pre-container.no-wrap li").each((index,li)=>{
                                                    if(li.className=="episode-item item-lg single-line cur"){
-                                                       window.__INITIAL_STATE__.epInfo=window.__INITIAL_STATE__.episodes[index]
-                                                       window.__INITIAL_STATE__.epInfo.status=2
+                                                       window.__INITIAL_STATE__.epInfo=window.__INITIAL_STATE__.epList[index]
                                                    }
                                                })
                                             let url = container.__url
