@@ -537,7 +537,7 @@ function scriptSource(invokeBy) {
                                                         }
                                                     })
                                                 }
-                                                if(!window.__INITIAL_STATE__)window.__INITIAL_STATE__={"epInfo":epInfo,"epList":json.result.episodes}
+                                                if(!window.__INITIAL_STATE__)window.__INITIAL_STATE__={"epInfo":epInfo,"epList":json.result.episodes,firstGet:false}
                                                 container.responseText = JSON.stringify(json)
 
                                        }else if (container.__url.match(util_regex_url('api.bilibili.com/pgc/player/web/playurl/html5'))
@@ -654,14 +654,13 @@ function scriptSource(invokeBy) {
         },2000)
 
     const balh_feature_area_limit_new = (function () {
-        let INITIAL_STATE=window.__INITIAL_STATE__;
-        INITIAL_STATE.firstGet=true;
+        let INITIAL_STATE
         Object.defineProperty(window, '__INITIAL_STATE__', {
             configurable: true,
             enumerable: true,
             get: ()=>{
                 // debugger
-                if(INITIAL_STATE.firstGet){
+                if(INITIAL_STATE&&(typeof INITIAL_STATE.firstGet=="undefined"||INITIAL_STATE.firstGet)){
                     log('__INITIAL_STATE__', INITIAL_STATE)
                     //status为13表示最新集,会被屏蔽.重置为2
                     if(INITIAL_STATE.epList){
@@ -678,7 +677,7 @@ function scriptSource(invokeBy) {
             },
             set: (value) => {
                 INITIAL_STATE=value
-                return value
+                return true
             }
         })
     })()
