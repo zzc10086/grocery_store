@@ -9,7 +9,7 @@
 // @compatible   firefox
 // @license      MIT
 // @require      https://static.hdslb.com/js/md5.js
-// @require      https://s1.hdslb.com/bfs/static/player/main/video.ac688598.js
+// @require      https://s2.hdslb.com/bfs/static/player/main/video.4c8e48ce.js?v=20200706
 // @include      *://m.bilibili.com/bangumi/play/ep*
 // @include      *://m.bilibili.com/bangumi/play/ss*
 // @run-at       document-start
@@ -393,14 +393,13 @@ function scriptSource(invokeBy) {
 
            function addPlayer(playurl) {
                if($("#flvPlay").length==0)$("#bofqi").html(_('video',{id:"flvPlay",style:{"z-index":101,float:"left",width:"100%"},controls:"ture",autoplay:"autoplay"}));
-               let dash=dashjs.MediaPlayer().create()
-               dash.initialize($("#flvPlay")[0],playurl.result.dash,false,false)
-               dash.setP2pType("yf-eg")
+               if(window.player){window.player.reset();window.player=dashjs.MediaPlayer().create()}else{window.player=dashjs.MediaPlayer().create()}
+//               window.player.setP2pType("xl-eg","//s1.hdslb.com/bfs/static/pcdnjs/pcdn-xldash-20.07.01.min.js")
+               window.player.initialize($("#flvPlay")[0],playurl.result.dash,false,true)
                if($(".player-mask.relative").length!==0)$(".player-mask.relative").css("display","none")
                if($(".no-source").length!==0)$(".no-source").css("display","none")
                if($(".video-length").length!==0)$(".video-length").css("display","none")
                $("#bofqi").css("display","")
-               return window.player=dash
            }
 //                let playurllist=new Array();
 //                for(let i in playurl.result.durl){
@@ -627,11 +626,6 @@ function scriptSource(invokeBy) {
 
     })()
 
-
-    window.unload=()=>{
-window.player
-    }
-
         //触发平台检查发回页面是脚本,会添加失败,所以用定时器
         setTimeout(()=>{
             if($("upos-server").length<1){
@@ -658,23 +652,28 @@ window.player
         },2000)
 
     const balh_feature_area_limit_new = (function () {
-        let INITIAL_STATE
+        let INITIAL_STATE=window.__INITIAL_STATE__;
         Object.defineProperty(window, '__INITIAL_STATE__', {
             configurable: true,
             enumerable: true,
-            get: ()=>{return INITIAL_STATE},
-            set: (value) => {
+            get: ()=>{
                 // debugger
-                log('__INITIAL_STATE__', value)
-                //status为13表示最新集,会被屏蔽.重置为2
-                if(value.epList){
-                    value.epList.forEach((episode,index,episodes)=>{
-                        episode.status=2
-                    })
+                if(typeof INITIAL_STATE.firstGet=="undefined"||INITIAL_STATE.firstGet){
+                    log('__INITIAL_STATE__', INITIAL_STATE)
+                    //status为13表示最新集,会被屏蔽.重置为2
+                    if(INITIAL_STATE.epList){
+                        INITIAL_STATE.epList.forEach((episode,index,episodes)=>{
+                            episode.status=2
+                        })
+                    }
+                    if(INITIAL_STATE.epInfo){
+                        INITIAL_STATE.epInfo.status=2
+                    }
+                    INITIAL_STATE.firstGet=false
                 }
-                if(value.epInfo){
-                    value.epInfo.status=2
-                }
+                return INITIAL_STATE
+            },
+            set: (value) => {
                 INITIAL_STATE=value
                 return value
             }
