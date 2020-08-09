@@ -515,27 +515,29 @@ function scriptSource(invokeBy) {
                                                 container.responseText = JSON.stringify(json)
                                             }
                                         }else if (!window.__INITIAL_STATE__&&target.responseURL.match(util_regex_url('api.bilibili.com/pgc/view/web/season'))){
-                                            //偶尔wiwindow.__INITIAL_STATE__为空,从api中取个一样的放进去
-                                                let epInfo
+                                            //当返回脚本时wiwindow.__INITIAL_STATE__为空,从api中取个一样的放进去
                                                 let json=JSON.parse(target.responseText)
-                                                let ss=location.href.match(/[0-9]+/)
-                                                if(target.responseURL.match(/ep_id/)){
-                                                    json.result.episodes.forEach((episode,index,episodes)=>{
-                                                        //ss666形式下获取aid,cid
-                                                        if(episode.id==ss){
-                                                            epInfo=episode
-                                                       }
-                                                    })
-                                                 }else{
-                                                     json.result.episodes.forEach((episode,index,episodes)=>{
-                                                         //ep666形式下获取aid,cid
-                                                         if(json.result.season_id==ss){
-                                                             epInfo=episode
-                                                         }
-                                                     })
-                                                    }
-                                                if(!window.__INITIAL_STATE__)window.__INITIAL_STATE__={"epInfo":epInfo,"epList":json.result.episodes}
                                                 json.result.status=2
+                                                let epInfo
+                                                let ss=location.href.match(/[0-9]+/)
+                                                let is_ep=target.responseURL.match(/ep_id/)?true:false;
+                                                if(json.result.episodes){
+                                                    json.result.episodes.forEach((episode,index,episodes)=>{
+                                                        episode.status=2
+                                                        if(is_ep){
+                                                            //ss666形式下获取aid,cid
+                                                            if(episode.id==ss){
+                                                                epInfo=episode
+                                                            }
+                                                        }else{
+                                                            //ep666形式下获取aid,cid
+                                                            if(json.result.season_id==ss){
+                                                                epInfo=episode
+                                                            }
+                                                        }
+                                                    })
+                                                }
+                                                if(!window.__INITIAL_STATE__)window.__INITIAL_STATE__={"epInfo":epInfo,"epList":json.result.episodes}
                                                 container.responseText = JSON.stringify(json)
 
                                        }else if (container.__url.match(util_regex_url('api.bilibili.com/pgc/player/web/playurl/html5'))
@@ -653,12 +655,13 @@ function scriptSource(invokeBy) {
 
     const balh_feature_area_limit_new = (function () {
         let INITIAL_STATE=window.__INITIAL_STATE__;
+        INITIAL_STATE.firstGet=true;
         Object.defineProperty(window, '__INITIAL_STATE__', {
             configurable: true,
             enumerable: true,
             get: ()=>{
                 // debugger
-                if(typeof INITIAL_STATE.firstGet=="undefined"||INITIAL_STATE.firstGet){
+                if(INITIAL_STATE.firstGet){
                     log('__INITIAL_STATE__', INITIAL_STATE)
                     //status为13表示最新集,会被屏蔽.重置为2
                     if(INITIAL_STATE.epList){
