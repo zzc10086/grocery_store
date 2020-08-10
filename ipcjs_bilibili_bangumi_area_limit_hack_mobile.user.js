@@ -9,7 +9,6 @@
 // @compatible   firefox
 // @license      MIT
 // @require      https://static.hdslb.com/js/md5.js
-// @require      https://s2.hdslb.com/bfs/static/player/main/video.4c8e48ce.js?v=20200706
 // @include      *://m.bilibili.com/bangumi/play/ep*
 // @include      *://m.bilibili.com/bangumi/play/ss*
 // @run-at       document-start
@@ -273,6 +272,13 @@ function scriptSource(invokeBy) {
     }
 
     const balh_feature_area_limit = (function () {
+//太大了,可能导致错过需要拦截的url,丢给页面自己加载吧
+        (()=>{
+            let $script = document.createElement('script')
+            $script.setAttribute('type', 'text/javascript')
+            $script.setAttribute('src', "//s2.hdslb.com/bfs/static/player/main/video.4c8e48ce.js?v=20200706")
+            document.head.appendChild($script)
+        })()
 
         function isAreaLimitForPlayUrl(json) {
             return ((json.code!==0 || json.message!== "success")&& json.message !== "不允许播放预览");
@@ -392,7 +398,7 @@ function scriptSource(invokeBy) {
            })();
 
            function addPlayer(playurl) {
-               if($("#flvPlay").length==0)$("#bofqi").html(_('video',{id:"flvPlay",style:{"z-index":101,float:"left",width:"100%"},controls:"ture",autoplay:"autoplay"}));
+               if($("#flvPlay").length==0)$("#bofqi").html(_('video',{id:"flvPlay",style:{"z-index":101,float:"left",width:"100%",height: "100%"},controls:"ture",autoplay:"autoplay"}));
                if(window.player){window.player.reset();window.player=dashjs.MediaPlayer().create()}else{window.player=dashjs.MediaPlayer().create()}
 //               window.player.setP2pType("xl-eg","//s1.hdslb.com/bfs/static/pcdnjs/pcdn-xldash-20.07.01.min.js")
                window.player.initialize($("#flvPlay")[0],playurl.result.dash,false,true)
