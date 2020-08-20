@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      7.9.3.3
+// @version      7.9.5.1
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/ipcjs/bilibili-helper/blob/user.js/bilibili_bangumi_area_limit_hack.md
@@ -17,7 +17,7 @@
 // @include      *://bangumi.bilibili.com/movie/*
 // @include      *://www.bilibili.com/bangumi/media/md*
 // @include      *://www.bilibili.com/blackboard/html5player.html*
-// @include      *://link.acg.tv/forum.php*
+// @include      https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png*
 // @run-at       document-start
 // @grant        none
 // ==/UserScript==
@@ -25,7 +25,7 @@
 'use strict';
 const log = console.log.bind(console, 'injector:')
 
-if (location.href.match(/^https?:\/\/link\.acg\.tv\/forum\.php/) != null) {
+if (location.href.match(/^https:\/\/www\.mcbbs\.net\/template\/mcbbs\/image\/special_photo_bg\.png/) != null) {
     if (location.href.match('access_key') != null && window.opener != null) {
         window.stop();
         document.children[0].innerHTML = '<title>BALH - 授权</title><meta charset="UTF-8" name="viewport" content="width=device-width">正在跳转……';
@@ -988,19 +988,25 @@ function scriptSource(invokeBy) {
         })
     }())
 
+    const access_key_param_if_exist = function (isKghost) {
+        // access_key是由B站验证的, B站帐号和BP帐号不同时, access_key无效
+        // kghost的服务器使用的B站帐号, access_key有效
+        return (localStorage.access_key && (!balh_config.blocked_vip || isKghost)) ? `&access_key=${localStorage.access_key}` : ''
+    }
+
     const balh_api_plus_view = function (aid, update = true) {
-        return util_ajax(`${balh_config.server}/api/view?id=${aid}&update=${update}`)
+        return util_ajax(`${balh_config.server}/api/view?id=${aid}&update=${update}${access_key_param_if_exist()}`);
     }
     const balh_api_plus_season = function (season_id) {
-        return util_ajax(`${balh_config.server}/api/bangumi?season=${season_id}`)
+        return util_ajax(`${balh_config.server}/api/bangumi?season=${season_id}${access_key_param_if_exist()}`);
     }
     // https://www.biliplus.com/BPplayurl.php?otype=json&cid=30188339&module=bangumi&qn=16&src=vupload&vid=vupload_30188339
     // qn = 16, 能看
     const balh_api_plus_playurl = function (cid, qn = 16, bangumi = true) {
-        return util_ajax(`${balh_config.server}/BPplayurl.php?otype=json&cid=${cid}${bangumi ? '&module=bangumi' : ''}&qn=${qn}&src=vupload&vid=vupload_${cid}`)
+        return util_ajax(`${balh_config.server}/BPplayurl.php?otype=json&cid=${cid}${bangumi ? '&module=bangumi' : ''}&qn=${qn}&src=vupload&vid=vupload_${cid}${access_key_param_if_exist()}`);
     }
     // https://www.biliplus.com/api/h5play.php?tid=33&cid=31166258&type=vupload&vid=vupload_31166258&bangumi=1
-    const balh_api_plus_playurl_for_mp4 = (cid, bangumi = true) => util_ajax(`${balh_config.server}/api/h5play.php?tid=33&cid=${cid}&type=vupload&vid=vupload_${cid}&bangumi=${bangumi ? 1 : 0}`)
+    const balh_api_plus_playurl_for_mp4 = (cid, bangumi = true) => util_ajax(`${balh_config.server}/api/h5play.php?tid=33&cid=${cid}&type=vupload&vid=vupload_${cid}&bangumi=${bangumi ? 1 : 0}${access_key_param_if_exist()}`)
         .then(text => (text.match(/srcUrl=\{"mp4":"(https?.*)"\};/) || ['', ''])[1]); // 提取mp4的url
 
     const balh_is_close = false
@@ -1219,28 +1225,19 @@ function scriptSource(invokeBy) {
                                             }
                                         } else if (target.responseURL.match(util_regex_url('api.bilibili.com/x/player.so'))) {
                                             // 这个接口的返回数据貌似并不会影响界面...
-                                            const xml = new DOMParser().parseFromString(`<root>${target.responseText.replace(/\&/g, "&amp;")}</root>`, 'text/xml')
                                             if (balh_config.blocked_vip) {
                                                 log('/x/player.so')
+                                                const xml = new DOMParser().parseFromString(`<root>${target.responseText.replace(/\&/g, "&amp;")}</root>`, 'text/xml')
                                                 const vipXml = xml.querySelector('vip')
                                                 if (vipXml) {
                                                     const vip = JSON.parse(vipXml.innerHTML)
                                                     vip.vipType = 2 // 同上
                                                     vip.vipStatus = 1
                                                     vipXml.innerHTML = JSON.stringify(vip)
+                                                    container.responseText = xml.documentElement.innerHTML
+                                                    container.response = container.responseText
                                                 }
                                             }
-                                            const pcdnXml= xml.querySelector('pcdn_loader')
-                                            if(pcdnXml){
-                                                const pcdn = JSON.parse(pcdnXml.innerHTML)
-                                                pcdn.dash.vendor="xl"
-                                                pcdn.flv.vendor="xl"
-                                                pcdn.dash.script_url="\/\/s1.hdslb.com\/bfs\/static\/pcdnjs\/pcdn-xldash-20.05.28.min.js"
-                                                pcdn.flv.script_url="\/\/s1.hdslb.com\/bfs\/static\/pcdnjs\/pcdn-xlflv-20.05.28.min.js"
-                                                pcdnXml.innerHTML = JSON.stringify(pcdn)
-                                            }
-                                                container.responseText = xml.documentElement.innerHTML
-                                                container.response = container.responseText
                                         } else if (target.responseURL.match(util_regex_url('api.bilibili.com/x/player/playurl'))) {
                                             log('/x/player/playurl', 'origin', `block: ${container.__block_response}`, target.response)
                                             // todo      : 当前只实现了r.const.mode.REPLACE, 需要支持其他模式
@@ -1716,7 +1713,7 @@ function scriptSource(invokeBy) {
             }
             var get_source_by_aid = new BilibiliApi({
                 transToProxyUrl: function (url) {
-                    return balh_config.server + '/api/view?id=' + window.aid + '&update=true';
+                    return balh_config.server + '/api/view?id=' + window.aid + `&update=true${access_key_param_if_exist()}`;
                 },
                 processProxySuccess: function (data) {
                     if (data && data.list && data.list[0] && data.movie) {
@@ -1748,7 +1745,7 @@ function scriptSource(invokeBy) {
             });
             var get_source_by_season_id = new BilibiliApi({
                 transToProxyUrl: function (url) {
-                    return balh_config.server + '/api/bangumi?season=' + window.season_id;
+                    return balh_config.server + '/api/bangumi?season=' + window.season_id + access_key_param_if_exist();
                 },
                 processProxySuccess: function (data) {
                     var found = null;
@@ -1800,6 +1797,9 @@ function scriptSource(invokeBy) {
                         qn: util_url_param(originUrl, 'qn'), // 增加这个参数, 返回的清晰度更多
                         player: 1,
                         ts: Math.floor(Date.now() / 1000),
+                    }
+                    if (localStorage.access_key) {
+                        paramDict.access_key = localStorage.access_key
                     }
                     if (module) paramDict.module = module
                     if (useJson) paramDict.otype = 'json'
@@ -1863,7 +1863,7 @@ function scriptSource(invokeBy) {
                     }
                     // 管他三七二十一, 强行将module=bangumi替换成module=pgc _(:3」∠)_
                     params = params.replace(/(&?module)=bangumi/, '$1=pgc')
-                    return `${balh_config.server}/BPplayurl.php?${params}`;
+                    return `${balh_config.server}/BPplayurl.php?${params}${access_key_param_if_exist()}`;
                 },
                 processProxySuccess: function (data, alertWhenError = true) {
                     // data有可能为null
@@ -1912,8 +1912,9 @@ function scriptSource(invokeBy) {
             const playurl_by_kghost = new BilibiliApi({
                 _asyncAjax: function (originUrl) {
                     const proxyHostMap = [
-                        [/僅.*港.*地區/, '//bilibili-hk-api.kghost.info/'],
                         [/僅.*台.*地區/, '//bilibili-tw-api.kghost.info/'],
+                        [/僅.*港.*地區/, '//bilibili-hk-api.kghost.info/'],
+                        [/仅限东南亚/, '//bilibili-sg-api.kghost.info/'],
                         [/.*/, '//bilibili-cn-api.kghost.info/'],
                     ];
                     let proxyHost
@@ -1931,9 +1932,12 @@ function scriptSource(invokeBy) {
                     }
                 },
                 transToProxyUrl: function (originUrl, proxyHost) {
-                    return originUrl.replace(/^(https:)?(\/\/api\.bilibili\.com\/)/, `$1${proxyHost}`)
+                    return originUrl.replace(/^(https:)?(\/\/api\.bilibili\.com\/)/, `$1${proxyHost}`) + access_key_param_if_exist(true);
                 },
                 processProxySuccess: function (result) {
+                    if (result.code) {
+                        return Promise.reject(result)
+                    }
                     return result.result
                 },
             })
@@ -1958,7 +1962,9 @@ function scriptSource(invokeBy) {
                             return Promise.reject(e)
                         })
                         .catch(e => {
-                            if (typeof e === 'object' && e.statusText == 'error') {
+                            if ((typeof e === 'object' && e.statusText == 'error')
+                                || (e instanceof AjaxException && e.code === -502)
+                            ) {
                                 util_ui_player_msg('尝试使用kghost的服务器拉取视频地址...')
                                 return playurl_by_kghost._asyncAjax(originUrl)
                                     .catch(e2 => Promise.reject(e))
@@ -2161,16 +2167,16 @@ function scriptSource(invokeBy) {
         // 2. 主站+服务器都退出登录后, 再重新登录主站
         function checkLoginState() {
             // 给一些状态，设置初始值
-            localStorage.balh_must_remind_login_v1 === undefined && (localStorage.balh_must_remind_login_v1 = r.const.TRUE)
+            localStorage.balh_must_remind_login_v3 === undefined && (localStorage.balh_must_remind_login_v3 = r.const.TRUE)
 
             if (isLoginBiliBili()) {
                 if (!localStorage.balh_old_isLoginBiliBili // 主站 不登录 => 登录
                     || localStorage.balh_pre_server !== balh_config.server // 代理服务器改变了
-                    || localStorage.balh_must_remind_login_v1) { // 设置了"必须提醒"flag
+                    || localStorage.balh_must_remind_login_v3) { // 设置了"必须提醒"flag
                     clearLoginFlag()
                     updateLoginFlag(() => {
-                        if (!isLogin()) {
-                            localStorage.balh_must_remind_login_v1 = r.const.FALSE;
+                        if (!isLogin() || !localStorage.access_key) {
+                            localStorage.balh_must_remind_login_v3 = r.const.FALSE;
                             util_ui_pop({
                                 content: [
                                     _('text', `${GM_info.script.name}\n要不要考虑进行一下授权？\n\n授权后可以观看区域限定番剧的1080P\n（如果你是大会员或承包过这部番的话）\n\n你可以随时在设置中打开授权页面`)
@@ -2196,7 +2202,7 @@ function scriptSource(invokeBy) {
             balh_auth_window.document.title = 'BALH - 授权';
             balh_auth_window.document.body.innerHTML = '<meta charset="UTF-8" name="viewport" content="width=device-width">正在获取授权，请稍候……';
             window.balh_auth_window = balh_auth_window;
-            $.ajax('https://passport.bilibili.com/login/app/third?appkey=27eb53fc9058f8c3&api=http%3A%2F%2Flink.acg.tv%2Fforum.php&sign=67ec798004373253d60114caaad89a8c', {
+            $.ajax('https://passport.bilibili.com/login/app/third?appkey=27eb53fc9058f8c3&api=https%3A%2F%2Fwww.mcbbs.net%2Ftemplate%2Fmcbbs%2Fimage%2Fspecial_photo_bg.png&sign=04224646d1fea004e79606d3b038c84a', {
                 xhrFields: { withCredentials: true },
                 type: 'GET',
                 dataType: 'json',
@@ -2254,7 +2260,9 @@ function scriptSource(invokeBy) {
                 case 'balh-login-credentials': {
                     balh_auth_window.close();
                     let url = e.data.split(': ')[1];
-                    util_ui_popframe(url.replace('http://link.acg.tv/forum.php', balh_config.server + '/login'));
+                    const access_key = new URL(url).searchParams.get('access_key');
+                    localStorage.access_key = access_key
+                    util_ui_popframe(url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png', balh_config.server + '/login'));
                     break;
                 }
             }
@@ -2819,10 +2827,11 @@ function scriptSource(invokeBy) {
                         _('a', { id: 'balh-copy-log', href: 'javascript:;', event: { click: onCopyClick } }, [_('text', '复制日志&问题反馈')]),
                         _('text', '　'),
                         _('a', { id: 'balh-issue-link', href: 'javascript:;', event: { click: openIssuePage }, style: { display: 'none' } }, [_('text', '问题反馈')]),
-                        _('text', '作者: ipcjs esterTion FlandreDaisuki'),
+                        _('a', { href: 'https://github.com/ipcjs/bilibili-helper/graphs/contributors' }, [_('text', '贡献者')]),
                         _('text', ' 接口：'),
-                        _('a', { href: 'https://www.biliplus.com/' }, [_('text', ' BiliPlus ')]),
-                        _('a', { href: 'https://github.com/kghost/bilibili-area-limit' }, [_('text', ' kghost ')]),
+                        _('a', { href: 'https://www.biliplus.com/' }, [_('text', 'BiliPlus ')]),
+                        _('a', { href: 'https://github.com/kghost/bilibili-area-limit' }, [_('text', 'kghost ')]),
+                        _('a', { href: 'https://github.com/yujincheng08/BiliRoaming' }, [_('text', 'BiliRoaming ')]),
                     ]),
                     _('textarea', { id: 'balh-textarea-copy', style: { display: 'none' } })
                 ])
@@ -2861,6 +2870,22 @@ function scriptSource(invokeBy) {
         util_init(() => {
             main()
         }, util_init.PRIORITY.DEFAULT, util_init.RUN_AT.DOM_LOADED_AFTER)
+    }())
+
+    const balh_mark_serve_check_area_limit_state = (function () {
+        if (!util_page.bangumi_md()) {
+            return
+        }
+        // 服务器需要通过这个接口判断是否有区域限制
+        // 详见: https://github.com/ipcjs/bilibili-helper/issues/385
+        util_init(() => {
+            const season_id = util_safe_get(`window.__INITIAL_STATE__.mediaInfo.param.season_id`)
+            if (season_id) {
+                balh_api_plus_season(season_id)
+                    .then(r => log(`season${season_id}`, r))
+                    .catch(e => log(`season${season_id}`, e))
+            }
+        })
     }())
     
     function replace_upos(data){
@@ -2914,24 +2939,7 @@ function scriptSource(invokeBy) {
         }
         return data;
     }
-
     
-    const balh_mark_serve_check_area_limit_state = (function () {
-        if (!util_page.bangumi_md()) {
-            return
-        }
-        // 服务器需要通过这个接口判断是否有区域限制
-        // 详见: https://github.com/ipcjs/bilibili-helper/issues/385
-        util_init(() => {
-            const season_id = util_safe_get(`window.__INITIAL_STATE__.mediaInfo.param.season_id`)
-            if (season_id) {
-                balh_api_plus_season(season_id)
-                    .then(r => log(`season${season_id}`, r))
-                    .catch(e => log(`season${season_id}`, e))
-            }
-        })
-    }())
-
     function main() {
         util_info(
             'mode:', balh_config.mode,
@@ -2965,11 +2973,12 @@ function scriptSource(invokeBy) {
                 delete localStorage.oauthTime
                 delete localStorage.balh_h5_not_first
                 delete localStorage.balh_old_isLoginBiliBili
-                delete localStorage.balh_must_remind_login_v1
+                delete localStorage.balh_must_remind_login_v3
                 delete localStorage.balh_must_updateLoginFlag
             }
         }
     }
+
     main();
 }
 
