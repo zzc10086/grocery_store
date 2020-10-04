@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      0.4.3.2
+// @version      0.4.3.3
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/zzc10086
@@ -11,6 +11,7 @@
 // @require      https://static.hdslb.com/js/md5.js
 // @include      *://m.bilibili.com/bangumi/play/ep*
 // @include      *://m.bilibili.com/bangumi/play/ss*
+// @include      *://m.bilibili.com/video/BV*
 // @run-at       document-start
 // @grant        none
 // ==/UserScript==
@@ -178,6 +179,35 @@ function scriptSource(invokeBy) {
         `)
     }
 
+        const balh_feature_area_limit_new = (function () {
+        let INITIAL_STATE
+        Object.defineProperty(window, '__INITIAL_STATE__', {
+            configurable: true,
+            enumerable: true,
+            get: ()=>{
+                // debugger
+                if(INITIAL_STATE&&(typeof INITIAL_STATE.firstGet=="undefined"||INITIAL_STATE.firstGet)){
+                    log('__INITIAL_STATE__', INITIAL_STATE)
+                    //status为13表示最新集,会被屏蔽.重置为2
+                    if(INITIAL_STATE.epList){
+                        INITIAL_STATE.epList.forEach((episode,index,episodes)=>{
+                            episode.status=2
+                        })
+                    }
+                    if(INITIAL_STATE.epInfo){
+                        INITIAL_STATE.epInfo.status=2
+                    }
+                    INITIAL_STATE.firstGet=false
+                }
+                return INITIAL_STATE
+            },
+            set: (value) => {
+                INITIAL_STATE=value
+                return true
+            }
+        })
+    })()
+
 
     function replace_upos(data){
         let replace_url;
@@ -270,10 +300,32 @@ function scriptSource(invokeBy) {
         })
         return util_promise_condition(() => window.$, creator, 100, 100) // 重试 100 * 100 = 10s
     }
+//bv转av
+    const util_str_bv2aid = function (bv) {
+        var table = 'fZodR9XQDSUm21yCkr6zBqiveYah8bt4xsWpHnJE7jL5VG3guMTKNPAwcF';
+        var tr = {};
+        for (var i = 0; i < 58; ++i) {
+            tr[table[i]] = i;
+        }
+
+        var s = [11, 10, 3, 8, 4, 6];
+        var xor = 177451812;
+        var add = 8728348608;
+
+        var r = 0;
+        for (let i = 0; i < 6; ++i) {
+            r += tr[bv[s[i]]] * (Math.pow(58, i));
+        }
+        return String((r - add) ^ xor);
+    }
 
     const balh_feature_area_limit = (function () {
 //太大了,可能导致错过需要拦截的url,丢给页面自己加载吧
         (()=>{
+            let bv = (location.pathname.match(/\/video\/(BV\w+)/) || ['', ''])[1]
+                if (bv) {
+                    window.location.href="https://m.bilibili.com/video/av"+util_str_bv2aid(bv);
+                }
             let $script = document.createElement('script')
             $script.setAttribute('type', 'text/javascript')
             $script.setAttribute('src', "//s2.hdslb.com/bfs/static/player/main/video.4c8e48ce.js?v=20200706")
@@ -658,39 +710,5 @@ function scriptSource(invokeBy) {
                 $(".upos-server").val(util_cookie.get("balh_"))
             }
         },2000)
-
-    const balh_feature_area_limit_new = (function () {
-        let INITIAL_STATE
-        Object.defineProperty(window, '__INITIAL_STATE__', {
-            configurable: true,
-            enumerable: true,
-            get: ()=>{
-                // debugger
-                if(INITIAL_STATE&&(typeof INITIAL_STATE.firstGet=="undefined"||INITIAL_STATE.firstGet)){
-                    log('__INITIAL_STATE__', INITIAL_STATE)
-                    //status为13表示最新集,会被屏蔽.重置为2
-                    if(INITIAL_STATE.epList){
-                        INITIAL_STATE.epList.forEach((episode,index,episodes)=>{
-                            episode.status=2
-                        })
-                    }
-                    if(INITIAL_STATE.epInfo){
-                        INITIAL_STATE.epInfo.status=2
-                    }
-                    INITIAL_STATE.firstGet=false
-                }
-                return INITIAL_STATE
-            },
-            set: (value) => {
-                INITIAL_STATE=value
-                return true
-            }
-        })
-    })()
-
-
-
-
-
 }
 scriptSource(GM_info.scriptHandler);
