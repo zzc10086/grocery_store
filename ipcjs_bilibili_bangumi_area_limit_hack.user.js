@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      7.9.5.2
+// @version      7.9.5.3
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/ipcjs/bilibili-helper/blob/user.js/bilibili_bangumi_area_limit_hack.md
@@ -2767,22 +2767,9 @@ function scriptSource(invokeBy) {
                                         let server = this.value;
                                         let message = $('#upos-server-message');
                                         let clearMsg = function () { message.text('') }
-                                        message.text('保存中...')
-                                        $.ajax(balh_config.server + '/api/setUposServer?server=' + server, {
-                                            xhrFields: { withCredentials: true },
-                                            dataType: 'json',
-                                            success: function (json) {
-                                                if (json.code == 0) {
-                                                    message.text('已保存');
-                                                    setTimeout(clearMsg, 3e3);
-                                                    balh_config.upos_server = server;
-                                                }
-                                            },
-                                            error: function () {
-                                                message.text('保存出错');
-                                                setTimeout(clearMsg, 3e3);
-                                            }
-                                        })
+										balh_config.upos_server = server;
+                                        message.text('已保存');
+                                        setTimeout(clearMsg, 3e3);
                                     }
                                 }
                             }, [
