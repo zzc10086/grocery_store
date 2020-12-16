@@ -210,6 +210,8 @@ function scriptSource(invokeBy) {
 
 
     function replace_upos(data){
+        if(!(typeof data.code == "undefined"))
+            data=data.result;
         let replace_url;
         let uposArr=[
             ["ks3u","https://upos-sz-mirrorks3.bilivideo.com"],
@@ -613,7 +615,7 @@ function scriptSource(invokeBy) {
                                            if(isAreaLimitForPlayUrl(JSON.parse(target.responseText))){
                                             bilibiliApis._playurl.asyncAjax(url)
                                                 .then(data => {
-                                                    if (!data.code) {
+                                                    if (typeof data.code == "undefined") {
                                                         data = {
                                                             code: 0,
                                                             result: data,
