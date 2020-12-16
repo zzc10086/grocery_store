@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      7.9.5.1
+// @version      7.9.5.2
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/ipcjs/bilibili-helper/blob/user.js/bilibili_bangumi_area_limit_hack.md
@@ -348,7 +348,7 @@ function scriptSource(invokeBy) {
 
         const util_init = function (func, priority = PRIORITY.DEFAULT, runAt = RUN_AT.DOM_LOADED, always = false) {
             func = util_func_catched(func)
-            if (util_init.atRun < runAt) { // 若还没运行到runAt指定的状态, 则放到队列里去 
+            if (util_init.atRun < runAt) { // 若还没运行到runAt指定的状态, 则放到队列里去
                 callbacks[runAt].push({
                     priority,
                     index: callbacks[runAt].length, // 使用callback数组的长度, 作为添加元素的index属性
@@ -563,7 +563,7 @@ function scriptSource(invokeBy) {
     const Promise = window.Promise // 在某些情况下, 页面中会修改window.Promise... 故我们要备份一下原始的Promise
     const util_promise_plus = (function () {
         /**
-        * 模仿RxJava中的compose操作符  
+        * 模仿RxJava中的compose操作符
         * @param transformer 转换函数, 传入Promise, 返回Promise; 若为空, 则啥也不做
         */
         Promise.prototype.compose = function (transformer) {
@@ -633,7 +633,7 @@ function scriptSource(invokeBy) {
         }
     }
     /**
-     * 创建元素的快捷方法: 
+     * 创建元素的快捷方法:
      * 1. type, props, children
      * 2. type, props, innerHTML
      * 3. 'text', text
@@ -1256,7 +1256,7 @@ function scriptSource(invokeBy) {
                                                     }
                                                     bilibiliApis._playurl.asyncAjax(url)
                                                         .then(data => {
-                                                            if (!data.code) {
+                                                            if (typeof data.code == "undefined") {
                                                                 data = { code: 0, result: data, message: "0" }
                                                             }
                                                             log('/pgc/player/web/playurl', 'proxy', data)
@@ -1302,7 +1302,7 @@ function scriptSource(invokeBy) {
                                             // debugger
                                             bilibiliApis._playurl.asyncAjax(container.__url)
                                                 .then(data => {
-                                                    if (!data.code) {
+                                                    if (typeof data.code == "undefined") {
                                                         data = {
                                                             code: 0,
                                                             data: data,
@@ -1326,7 +1326,7 @@ function scriptSource(invokeBy) {
                                             }
                                             bilibiliApis._playurl.asyncAjax(url)
                                                 .then(data => {
-                                                    if (!data.code) {
+                                                    if (typeof data.code == "undefined") {
                                                         data = {
                                                             code: 0,
                                                             result: data,
@@ -2582,7 +2582,7 @@ function scriptSource(invokeBy) {
                     #balh-settings-btn:hover {
                         background: #00a1d6;
                         border-color: #00a1d6;
-                    }            
+                    }
                     #balh-settings-btn .icon-saturn {
                         width: 30px;
                         height: ${size};
@@ -2590,7 +2590,7 @@ function scriptSource(invokeBy) {
                     }
                     #balh-settings-btn:hover .icon-saturn {
                         fill: white;
-                    }            
+                    }
             `)])
             }
             if (indexNav == null) {
@@ -2887,8 +2887,10 @@ function scriptSource(invokeBy) {
             }
         })
     }())
-    
+
     function replace_upos(data){
+        if(!(typeof data.code == "undefined"))
+            data=data.result;
         let replace_url;
         let uposArr=[
             ["ks3u","https://upos-sz-mirrorks3.bilivideo.com"],
@@ -2939,7 +2941,7 @@ function scriptSource(invokeBy) {
         }
         return data;
     }
-    
+
     function main() {
         util_info(
             'mode:', balh_config.mode,
