@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      7.9.5.3
+// @version      7.9.5.4
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/ipcjs/bilibili-helper/blob/user.js/bilibili_bangumi_area_limit_hack.md
@@ -592,22 +592,12 @@ function scriptSource(invokeBy) {
         return loop(0)
     }
 
-    const util_ajax = function (options) {
-        const creator = () => new Promise(function (resolve, reject) {
-            typeof options !== 'object' && (options = { url: options });
-
-            options.async === undefined && (options.async = true);
-            options.xhrFields === undefined && (options.xhrFields = { withCredentials: true });
-            options.success = function (data) {
-                resolve(data);
-            };
-            options.error = function (err) {
-                reject(err);
-            };
-            util_debug('ajax:', options.url)
-            $.ajax(options);
-        })
-        return util_promise_condition(() => window.$, creator, 100, 100) // 重试 100 * 100 = 10s
+    const util_ajax = function (url) {
+        return fetch(url).then(function(response){
+            return response.json();
+        }).catch(function(e){
+            console.log('error' + e);
+        });
     }
     /**
     * @param promiseCeator  创建Promise的函数
@@ -995,10 +985,12 @@ function scriptSource(invokeBy) {
     }
 
     const balh_api_plus_view = function (aid, update = true) {
-        return util_ajax(`${balh_config.server}/api/view?id=${aid}&update=${update}${access_key_param_if_exist()}`);
+        return util_ajax(`https://www.biliplus.com/api/view?id=${aid}&update=${update}${access_key_param_if_exist()}`);
+        //return util_ajax(`${balh_config.server}/api/view?id=${aid}&update=${update}${access_key_param_if_exist()}`);
     }
     const balh_api_plus_season = function (season_id) {
-        return util_ajax(`${balh_config.server}/api/bangumi?season=${season_id}${access_key_param_if_exist()}`);
+        return util_ajax(`https://www.biliplus.com/api/bangumi?season=${season_id}${access_key_param_if_exist()}`);
+        //return util_ajax(`${balh_config.server}/api/bangumi?season=${season_id}${access_key_param_if_exist()}`);
     }
     // https://www.biliplus.com/BPplayurl.php?otype=json&cid=30188339&module=bangumi&qn=16&src=vupload&vid=vupload_30188339
     // qn = 16, 能看
