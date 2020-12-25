@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      7.9.5.4
+// @version      7.9.6.4
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/ipcjs/bilibili-helper/blob/user.js/bilibili_bangumi_area_limit_hack.md
@@ -560,6 +560,16 @@ function scriptSource(invokeBy) {
             }
         })
     }())
+
+    !function () {
+            window.Response = new Proxy(window.Response, {
+                    get: function (target, prop, receiver) {
+
+                        return receiver
+                    }
+                })
+        }();
+
     const Promise = window.Promise // 在某些情况下, 页面中会修改window.Promise... 故我们要备份一下原始的Promise
     const util_promise_plus = (function () {
         /**
@@ -1090,7 +1100,7 @@ function scriptSource(invokeBy) {
                 configurable: true,
                 enumerable: true,
                 get: () => {
-                    return value
+                    return modifyFn(value)
                 },
                 set: (val) => {
                     value = modifyFn(val)
@@ -1118,6 +1128,20 @@ function scriptSource(invokeBy) {
         }
         function replaceInitialState() {
             modifyGlobalValue('__INITIAL_STATE__', (value) => {
+				var _a, _b;
+                 if((value.epInfo.rights&&value.epInfo.rights.area_limit==1)){
+                    value.player.limitType=0;
+                    value.epInfo.badge='';
+                    value.epInfo.rights.area_limit=0;
+                 }
+                if(value.epList[0].rights.area_limit==1){
+                    for (let ep of [value.epInfo, ...value.epList]) {
+                        if (ep.rights.area_limit === 1) {
+                            ep.rights.area_limit = 0
+                            if(ep.badge=='受限')ep.badge='';
+                        }
+                    }
+                }
                 if (value && value.epInfo && value.epList && balh_config.blocked_vip) {
                     for (let ep of [value.epInfo, ...value.epList]) {
                         // 13貌似表示会员视频, 2为普通视频
@@ -1127,6 +1151,10 @@ function scriptSource(invokeBy) {
                         }
                     }
                 }
+				if (((_b = (_a = value === null || value === void 0 ? void 0 : value.mediaInfo) === null || _a === void 0 ? void 0 : _a.rights) === null || _b === void 0 ? void 0 : _b.appOnly) === true) {
+                        value.mediaInfo.rights.appOnly = false;
+                        window.__balh_app_only__ = true;
+                    }
                 return value
             })
         }
