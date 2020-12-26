@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      7.9.6.4
+// @version      7.9.5.5
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/ipcjs/bilibili-helper/blob/user.js/bilibili_bangumi_area_limit_hack.md
@@ -1134,10 +1134,14 @@ function scriptSource(invokeBy) {
                     value.epInfo.badge='';
                     value.epInfo.rights.area_limit=0;
                  }
-                if(value.epList[0].rights.area_limit==1){
+                if(value.epList.length>0&&value.epList[0].rights.area_limit==1){
                     for (let ep of [value.epInfo, ...value.epList]) {
                         if (ep.rights.area_limit === 1) {
                             ep.rights.area_limit = 0
+                            if(ep.epStatus === 13){
+                                ep.badge='会员'
+                                ep.badgeColor='#FB7299'
+                            }
                             if(ep.badge=='受限')ep.badge='';
                         }
                     }
