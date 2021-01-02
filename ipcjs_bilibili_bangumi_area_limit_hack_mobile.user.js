@@ -16,6 +16,11 @@
 // @grant        none
 // ==/UserScript==
 
+
+/*
+需要搭配User-Agnent Switcher这样的修改UA的插件.直接使用脚本会出现无法播放,视频流请求403错误
+将视频的CDN域名UA改为IOS和PC平台的即可正常播放
+*/
 const log = console.log.bind(console, 'injector:')
 function injector() {
     if (document.getElementById('balh-injector-source')) {
@@ -185,20 +190,36 @@ function scriptSource(invokeBy) {
             configurable: true,
             enumerable: true,
             get: ()=>{
-                // debugger
-                if(INITIAL_STATE&&(typeof INITIAL_STATE.firstGet=="undefined"||INITIAL_STATE.firstGet)){
-                    log('__INITIAL_STATE__', INITIAL_STATE)
-                    //status为13表示最新集,会被屏蔽.重置为2
-                    if(INITIAL_STATE.epList){
-                        INITIAL_STATE.epList.forEach((episode,index,episodes)=>{
-                            episode.status=2
-                        })
+               var _a, _b;
+                 if(INITIAL_STATE &&INITIAL_STATE.epInfo.rights&&INITIAL_STATE.epInfo.rights.area_limit==1){
+                    INITIAL_STATE.epInfo.badge='';
+                    INITIAL_STATE.epInfo.rights.area_limit=0;
+                 }
+                if(INITIAL_STATE &&INITIAL_STATE.epList.length>0&&INITIAL_STATE.epList[0].rights.area_limit==1){
+                    for (let ep of [INITIAL_STATE.epInfo, ...INITIAL_STATE.epList]) {
+                        if (ep.rights.area_limit === 1) {
+                            ep.rights.area_limit = 0
+                            if(ep.epStatus === 13){
+                                ep.badge='会员'
+                                ep.badgeColor='#FB7299'
+                            }
+                            if(ep.badge=='受限')ep.badge='';
+                        }
                     }
-                    if(INITIAL_STATE.epInfo){
-                        INITIAL_STATE.epInfo.status=2
-                    }
-                    INITIAL_STATE.firstGet=false
                 }
+                if (INITIAL_STATE && INITIAL_STATE.epInfo && INITIAL_STATE.epList) {
+                    for (let ep of [INITIAL_STATE.epInfo, ...INITIAL_STATE.epList]) {
+                        // 13貌似表示会员视频, 2为普通视频
+                        if (ep.epStatus === 13) {
+                            log('epStatus 13 => 2', ep)
+                            ep.epStatus = 2
+                        }
+                    }
+                }
+				if (((_b = (_a = INITIAL_STATE === null || INITIAL_STATE === void 0 ? void 0 : INITIAL_STATE.mediaInfo) === null || _a === void 0 ? void 0 : _a.rights) === null || _b === void 0 ? void 0 : _b.appOnly) === true) {
+                        INITIAL_STATE.mediaInfo.rights.appOnly = false;
+                        window.__balh_app_only__ = true;
+                    }
                 return INITIAL_STATE
             },
             set: (value) => {
@@ -376,7 +397,7 @@ function scriptSource(invokeBy) {
                     // 管他三七二十一, 强行将module=bangumi替换成module=pgc _(:3」∠)_
                     params = params.replace(/&?module=(\w+)/, '')
                     params += '&module=pgc'
-                    return `https://www.biliplus.com/BPplayurl.php?${params}`;
+                    return `https://bili-proxy.98e.org/BPplayurl.php?${params}`;
                 },
                 processProxySuccess: function (data, alertWhenError = true) {
                     // data有可能为null
@@ -435,12 +456,12 @@ function scriptSource(invokeBy) {
                         if(!isAreaLimitForPlayUrl(data)){
                             return data
                         }else{
-                            alert("代理服务器依旧被限制")
-                            return data
+                            alert(data.message)
+                            return Promise.reject(data)
                         }
                         })
                         .catch(e=>{
-                        alert("PC网页端播放地址获取失败")
+                        log('PC网页端播放地址获取失败')
                         return Promise.reject(e)
                     })
                 }
@@ -574,7 +595,7 @@ function scriptSource(invokeBy) {
                                                 json.data.vipStatus = 1; // 状态, 启用
                                                 container.responseText = JSON.stringify(json)
                                             }
-                                        }else if (!window.__INITIAL_STATE__&&target.responseURL.match(util_regex_url('api.bilibili.com/pgc/view/web/season'))){
+                                        }else if (!window.__INITIAL_STATE__&&target.responseURL.match(util_regex_url('api.bilibili.com/pgc/view/web/h5/season'))){
                                             //当返回脚本时wiwindow.__INITIAL_STATE__为空,从api中取个一样的放进去
                                                 let json=JSON.parse(target.responseText)
                                                 json.result.status=2
@@ -584,6 +605,14 @@ function scriptSource(invokeBy) {
                                                 if(json.result.episodes){
                                                     json.result.episodes.forEach((episode,index,episodes)=>{
                                                         episode.status=2
+                                                        if (episode.rights.area_limit === 1) {
+                                                            episode.rights.area_limit = 0
+                                                            if(episode.epStatus === 13){
+                                                                episode.badge='会员'
+                                                                episode.badgeColor='#FB7299'
+                                                            }
+                                                            if(episode.badge=='受限')ep.badge='';
+                                                        }
                                                         if(is_ep){
                                                             //ss666形式下获取aid,cid
                                                             if(episode.id==ss){
@@ -604,18 +633,19 @@ function scriptSource(invokeBy) {
                                             && !util_url_param(container.__url, 'balh_ajax')) {
                                             log('/pgc/player/web/playurl')
                                             // debugger
-                                           if(window.__INITIAL_STATE__.epList)
+                                           if(window.__INITIAL_STATE__&&window.__INITIAL_STATE__.epList){
                                                $(".ep-list-pre-container.no-wrap li").each((index,li)=>{
                                                    if(li.className=="episode-item item-lg single-line cur"){
                                                        window.__INITIAL_STATE__.epInfo=window.__INITIAL_STATE__.epList[index]
                                                    }
                                                })
+											 }
                                             let url = container.__url
                                             url=url.replace(/ep_id=.*/,"cid="+window.__INITIAL_STATE__.epInfo.cid+"&avid="+window.__INITIAL_STATE__.epInfo.aid+"&otype=json&qn=112&fnver=0&fnval=16")
                                            if(isAreaLimitForPlayUrl(JSON.parse(target.responseText))){
                                             bilibiliApis._playurl.asyncAjax(url)
                                                 .then(data => {
-                                                    if (typeof data.code == "undefined") {
+                                                    if (data.code == "0") {
                                                         data = {
                                                             code: 0,
                                                             result: data,
