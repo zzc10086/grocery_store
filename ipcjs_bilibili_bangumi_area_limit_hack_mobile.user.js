@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除移动版B站区域限制
 // @namespace    http://tampermonkey.net/
-// @version      0.4.3.3
+// @version      0.4.3.4
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/zzc10086
@@ -190,36 +190,22 @@ function scriptSource(invokeBy) {
             configurable: true,
             enumerable: true,
             get: ()=>{
-               var _a, _b;
-                 if(INITIAL_STATE &&INITIAL_STATE.epInfo.rights&&INITIAL_STATE.epInfo.rights.area_limit==1){
-                    INITIAL_STATE.epInfo.badge='';
+                 if(INITIAL_STATE &&INITIAL_STATE.epInfo.rights){
                     INITIAL_STATE.epInfo.rights.area_limit=0;
+                    if(INITIAL_STATE.epInfo.badge_info.text=='受限')INITIAL_STATE.epInfo.badge_info.text='';
+                    INITIAL_STATE.epInfo.status=2
                  }
-                if(INITIAL_STATE &&INITIAL_STATE.epList.length>0&&INITIAL_STATE.epList[0].rights.area_limit==1){
+                if(INITIAL_STATE &&INITIAL_STATE.epList.length>0){
                     for (let ep of [INITIAL_STATE.epInfo, ...INITIAL_STATE.epList]) {
                         if (ep.rights.area_limit === 1) {
                             ep.rights.area_limit = 0
-                            if(ep.epStatus === 13){
-                                ep.badge='会员'
-                                ep.badgeColor='#FB7299'
-                            }
-                            if(ep.badge=='受限')ep.badge='';
+                            if(ep.badge_info.text=='受限')ep.badge_info.text='';
+                        }
+                        if(ep.status === 13){
+                                ep.status=2
                         }
                     }
                 }
-                if (INITIAL_STATE && INITIAL_STATE.epInfo && INITIAL_STATE.epList) {
-                    for (let ep of [INITIAL_STATE.epInfo, ...INITIAL_STATE.epList]) {
-                        // 13貌似表示会员视频, 2为普通视频
-                        if (ep.epStatus === 13) {
-                            log('epStatus 13 => 2', ep)
-                            ep.epStatus = 2
-                        }
-                    }
-                }
-				if (((_b = (_a = INITIAL_STATE === null || INITIAL_STATE === void 0 ? void 0 : INITIAL_STATE.mediaInfo) === null || _a === void 0 ? void 0 : _a.rights) === null || _b === void 0 ? void 0 : _b.appOnly) === true) {
-                        INITIAL_STATE.mediaInfo.rights.appOnly = false;
-                        window.__balh_app_only__ = true;
-                    }
                 return INITIAL_STATE
             },
             set: (value) => {
@@ -231,8 +217,7 @@ function scriptSource(invokeBy) {
 
 
     function replace_upos(data){
-        if(!(typeof data.code == "undefined"))
-            data=data.result;
+        if(!(typeof data.code == "undefined"))data=data.result;
         let replace_url;
         let uposArr=[
             ["ks3u","https://upos-sz-mirrorks3.bilivideo.com"],
