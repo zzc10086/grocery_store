@@ -21,9 +21,9 @@ function handler($request, $context): Response
     $clientIP   = $request->getAttribute('clientIP');
     */
     /* Config */
-
     $upstream_pc_url = 'https://api.bilibili.com/pgc/player/web/playurl';
     $upstream_app_url = 'https://api.bilibili.com/pgc/player/api/playurl';
+    $upstream_pc_search_url = 'https://api.bilibili.com/x/web-interface/search/type';
     $timeout = 5; // seconds
 
 
@@ -33,29 +33,45 @@ function handler($request, $context): Response
     $req_referer = $request->getHeaderLine('referer');;
     $request_headers = $request->getHeaders();
     $request_body = $request->getBody()->getContents();
+    $request_uri = $request->getAttribute('requestURI');
 
 
 
     /* Forward request */
     $ch = curl_init();
 
-    //清理相关header
-    array_splice($request_headers, array_search('HOST', $request_headers));
-    array_splice($request_headers, array_search('User-Agent', $request_headers));
-    array_splice($request_headers, array_search('Referer', $request_headers));
-
+    //处理请求相关header
+    $request_headers = array_remove_by_key($request_headers,'Host');
+    $request_headers = array_remove_by_key($request_headers,'X-Forwarded-For');
+    //配置body压缩方式
+    $request_headers = array_remove_by_key($request_headers,'Accept-Encoding');
+    curl_setopt($ch, CURLOPT_ENCODING, "identity");//好像b站只有br压缩
 
     $headers = array();
     foreach ($request_headers as $key => $value) {
-        $headers[] = $key . ': ' . $value;
+        $headers[] = $key . ": " .implode($value);
     }
-    //判断使用pc还是app接口
-    if (substr_count($request_query, 'platform=android') != 0) {
-        $url = $upstream_app_url . $request_query;
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Bilibili Freedoooooom/MarkII');
-    } else {
-        $url = $upstream_pc_url . $request_query;
+
+    //判断请求接口
+    if(substr_count($request_uri,'/search/type')!=0){
+        $url = $upstream_pc_search_url . '?' .$request_query;
         curl_setopt($ch, CURLOPT_REFERER, $req_referer);
+    }elseif (substr_count($request_uri,'playurl')!=0){
+        //判断使用的那个pc还是app接口
+        if(substr_count($request_query,'platform=android')!=0){
+            $url = $upstream_app_url . '?' .$request_query;
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Bilibili Freedoooooom/MarkII');
+        }else{
+            $url = $upstream_pc_url . '?' .$request_query;
+            curl_setopt($ch, CURLOPT_REFERER, $req_referer);
+        }
+    }else{
+        $header['Content-Type'] = 'text/plain';
+        return new Response(
+            502,
+            $header,
+            'Failed to match interface.'
+        );
     }
     //curl配置
     curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
@@ -79,10 +95,23 @@ function handler($request, $context): Response
         );
     } else {
         $header_length = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        $curl_response_headers = explode("\n", substr($response, 0, $header_length));
+        $response_headers = explode("\n", substr($response, 0, $header_length));
         $response_body = substr($response, $header_length);
-
-        foreach ($curl_response_headers as $header_string) {
+        //处理返回相关header
+        foreach ($response_headers as $n => $response_header) {
+            //配置返回的body压缩方式
+            if (strpos($response_header, "Content-Encoding") !== false) {
+                $response_headers[$n] = "Content-Encoding: identity\n";
+            }
+            //删除B站返回的Content-Length,防止浏览器只读取Content-Length长度的数据,造成json不完整
+            if (strpos($response_header, "Content-Length") !== false) {
+                unset($response_headers[$n]);
+            }
+        }
+        unset($response_header); 
+        
+        //response_headers数组转成key=>value形式
+        foreach ($response_headers as $header_string) {
             $header_tmp = explode(': ', $header_string, 2);
             if (count($header_tmp) == 2) {
                 $header[$header_tmp[0]] = trim($header_tmp[1]);
@@ -112,4 +141,18 @@ function str_n_pos($str, $find, $n)
     }
     $count = $pos_val - 1;
     return $count;
+}
+
+function array_remove_by_key($arr, $key)
+{
+	if(!array_key_exists($key, $arr)){
+		return $arr;
+	}
+	$keys = array_keys($arr);
+	$index = array_search($key, $keys);
+	if($index !== FALSE){
+		array_splice($arr, $index, 1);
+	}
+
+	return $arr;
 }
