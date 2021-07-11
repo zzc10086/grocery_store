@@ -107,6 +107,10 @@ function handler($request, $context): Response
             if (strpos($response_header, "Content-Length") !== false) {
                 unset($response_headers[$n]);
             }
+            //阿里云函数好像会自己添加Access-Control-Allow-Credentials头，删除b站返回的
+            if (strpos($response_header, "Access-Control-Allow-Credentials") !== false) {
+                unset($response_headers[$n]);
+            }
         }
         unset($response_header); 
         
