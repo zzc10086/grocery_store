@@ -12,4 +12,9 @@
 
 
 ## 自建代理服务
-### 香港`https://repost.98e.org` 
+香港`https://repost.98e.org` 
+
+
+
+## 手动授权流程
+[跳转链接](https://github.com/zzc10086/grocery_store/blob/master/bili_proxy/auth.md)
