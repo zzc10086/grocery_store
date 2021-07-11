@@ -8,7 +8,7 @@
 
 [阿里云函数计算](https://www.aliyun.com/product/fc)按次计费，有免费额度。参考@realLyans写的[简易教程](https://github.com/ipcjs/bilibili-helper/issues/710#issuecomment-748976481)
 
-*****阿里云函数计算版本添加多接口后支持后和油猴脚本(8.2.3)不兼容，需要在链接后面添加`playurl`暂时规避*****
+*****阿里云函数计算版本添加多接口支持后和油猴脚本(8.2.3)不兼容，需要在链接后面添加`playurl`暂时规避*****
 
 
 ## 自建代理服务
