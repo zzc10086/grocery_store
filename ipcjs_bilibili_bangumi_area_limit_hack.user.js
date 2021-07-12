@@ -9,7 +9,7 @@
 // @compatible   firefox
 // @license      MIT
 // @require      https://static.hdslb.com/js/md5.js
-// @include      *://search.bilibili.com/bangum*
+// @include      *://search.bilibili.com/*
 // @include      *://www.bilibili.com/video/av*
 // @include      *://www.bilibili.com/video/BV*
 // @include      *://www.bilibili.com/bangumi/play/ep*
