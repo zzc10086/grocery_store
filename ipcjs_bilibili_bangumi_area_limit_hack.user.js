@@ -26,6 +26,18 @@
 // @grant        none
 // ==/UserScript==
 
+/**
+需安装Content Security Policy Override这个谷歌插件关闭b站搜索页面的CSP策略
+安全起见,建议配置插件在特定网站上,填入https://search.bilibili.com/*
+在插件配置页面粘贴以下内容即可
+[
+# Example: whitelisting MathJax on GitHub:
+   ["https://search\\.bilibili\\.com/bangumi", [
+       ["connect-src", "connect-src  'self' data: *"]
+    ]]
+]
+**/
+
 const log = console.log.bind(console, 'injector:')
 
     if (location.href.match(/^https:\/\/www\.mcbbs\.net\/template\/mcbbs\/image\/special_photo_bg\.png/) != null) {
