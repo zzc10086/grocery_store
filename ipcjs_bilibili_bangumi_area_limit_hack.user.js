@@ -32,7 +32,7 @@
 在插件配置页面粘贴以下内容即可
 [
 # Example: whitelisting MathJax on GitHub:
-   ["https://search\\.bilibili\\.com/bangumi", [
+   ["https://search\\.bilibili\\.com", [
        ["connect-src", "connect-src  'self' data: *"]
     ]]
 ]
