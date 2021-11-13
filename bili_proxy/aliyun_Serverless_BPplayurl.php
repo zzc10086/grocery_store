@@ -29,8 +29,10 @@ function handler($request, $context): Response
 
     /* Read incoming request */
     $request_method = $request->getMethod();
-    $request_query = stristr($request->getAttribute("requestURI"), '?');
-    $req_referer = $request->getHeaderLine('referer');;
+    $request_query = substr(stristr($request->getAttribute("requestURI"), '?'),1);
+    //$request->getHeaderLine('referer')会被阿里云替换成云函url
+    //$req_referer = $request->getHeaderLine('referer');
+    $req_referer = "https://www.bilibili.com";
     $request_headers = $request->getHeaders();
     $request_body = $request->getBody()->getContents();
     $request_uri = $request->getAttribute('requestURI');
@@ -41,8 +43,9 @@ function handler($request, $context): Response
     $ch = curl_init();
 
     //处理请求相关header
+    $request_headers = array_remove_by_key($request_headers,'X-Forwarded-Proto');
     $request_headers = array_remove_by_key($request_headers,'Host');
-    $request_headers = array_remove_by_key($request_headers,'X-Forwarded-For');
+    $request_headers = array_remove_by_key($request_headers,'Referer');
     //配置body压缩方式
     $request_headers = array_remove_by_key($request_headers,'Accept-Encoding');
     curl_setopt($ch, CURLOPT_ENCODING, "identity");//好像b站只有br压缩
