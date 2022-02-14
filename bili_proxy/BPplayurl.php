@@ -21,7 +21,7 @@ $request_body = file_get_contents('php://input');
 //某个字符串在另一个字符串第N此出现的下标
 function str_n_pos($str,$find,$n)
 {
-    $pos_val='';
+    $pos_val=0;
         for ($i=1;$i<=$n;$i++){
             $pos = strpos($str,$find);
             $str = substr($str,$pos+1);
