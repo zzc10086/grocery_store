@@ -3886,12 +3886,7 @@ function scriptSource(invokeBy) {
                         let isNewPlayurl;
                         if (isNewPlayurl = param.url.match(RegExps.url('api.bilibili.com/pgc/player/web/playurl'))) {
                             if (param.data) {
-                                param.url += `?${Object.keys(param.data).map(key => ` $ {
-                                    key
-                                } = $ {
-                                    param.data[key]
-                                }
-`).join('&')}`;
+                                param.url += `?${Object.keys(param.data).map(key => `${key}=${param.data[key]}`).join('&')}`;
                                 param.data = undefined;
                             }
                             if (isBangumiPage()) {
