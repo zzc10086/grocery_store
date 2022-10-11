@@ -29,6 +29,7 @@ function handler($request, $context): Response
 
     /* Read incoming request */
     $request_method = $request->getMethod();
+    $queries  = $request->getQueryParams();
     $request_query = substr(stristr($request->getAttribute("requestURI"), '?'),1);
     //$request->getHeaderLine('referer')会被阿里云替换成云函url
     //$req_referer = $request->getHeaderLine('referer');
@@ -57,6 +58,8 @@ function handler($request, $context): Response
 
     //判断请求接口
     if(substr_count($request_uri,'/search/type')!=0){
+        //搜索接口强制需要buvid3这个cookie,应该与账号无关,访问https://api.bilibili.com/x/frontend/finger/spi可直接获取
+        if (substr_count($request_query,'buvid3')!=0) array_push($headers,"cookie: buvid3=".$queries['buvid3']);
         $url = $upstream_pc_search_url . '?' .$request_query;
         curl_setopt($ch, CURLOPT_REFERER, $req_referer);
     }elseif (substr_count($request_uri,'playurl')!=0){
