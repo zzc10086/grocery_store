@@ -1,4 +1,4 @@
- <  ? php
+ <?php
 
 /* Config */
 
@@ -137,4 +137,4 @@ if ($response === false) {
 }
 
 curl_close($ch);
-?  >
+?>
