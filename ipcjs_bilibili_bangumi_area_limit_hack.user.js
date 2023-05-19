@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除B站区域限制
 // @namespace    https://github.com/ipcjs
-// @version      8.4.3.1
+// @version      8.4.3.2
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/ipcjs/bilibili-helper/blob/user.js/packages/unblock-area-limit/README.md
@@ -851,7 +851,7 @@ function scriptSource(invokeBy) {
             return `${host}/intl/gateway/v2/ogv/playurl?${generateMobiPlayUrlParams(originUrl, area)}`;
         }
         // 合成完整 mobi api url
-        return `${host}/pgc/player/api/playurl?${generateMobiPlayUrlParams(originUrl, area)}`;
+        return `${host}"badge_type": 0l?${generateMobiPlayUrlParams(originUrl, area)}`;
     }
     function generateMobiPlayUrlParams(originUrl, area) {
         // 提取参数为数组
@@ -3745,9 +3745,9 @@ var css$1 = "#balh-settings {\n  font-size: 12px;\n  color: #6d757a; }\n  #balh-
 								log('/x/web-interface/search/type', 'proxy', data);
 								return data
 							})
-                        } else if (url.match(RegExps.url('api.bilibili.com/pgc/player/web/playurl'))
+                        } else if ((url.match(RegExps.url('api.bilibili.com//pgc/player/web/v2/playurl'))||url.match(RegExps.url('api.bilibili.com/pgc/player/web/playurl')))
                             && !Strings.getSearchParam(url, 'balh_ajax')) {
-                            log('/pgc/player/web/playurl', 'origin', `block: ${container.__block_response}`, xhr.response);
+                            log('//pgc/player/web/v2/playurl', 'origin', `block: ${container.__block_response}`, xhr.response);
                             if (!container.__redirect) { // 请求没有被重定向, 则需要检测结果是否有区域限制
                                 let json = typeof xhr.response === 'object' ? xhr.response : JSON.parse(xhr.responseText);
                                 if (balh_config.blocked_vip || json.code || isAreaLimitForPlayUrl(json.result)) {
@@ -3762,7 +3762,7 @@ var css$1 = "#balh-settings {\n  font-size: 12px;\n  color: #6d757a; }\n  #balh-
                                             if (!data.code) {
                                                 data = { code: 0, result: data, message: "0" };
                                             }
-                                            log('/pgc/player/web/playurl', 'proxy', data);
+                                            log('//pgc/player/web/v2/playurl', 'proxy', data);
                                             return data
                                         })
                                 } else {
@@ -3819,10 +3819,10 @@ var css$1 = "#balh-settings {\n  font-size: 12px;\n  color: #6d757a; }\n  #balh-
                                     return data
                                 })
 
-                        } else if (url.match(RegExps.url('api.bilibili.com/pgc/player/web/playurl'))
+                        } else if (url.match(RegExps.url('api.bilibili.com//pgc/player/web/v2/playurl') || url.match(RegExps.url('api.bilibili.com/pgc/player/web/v2/playurl')))
                             && !Strings.getSearchParam(url, 'balh_ajax')
                             && needRedirect()) {
-                            log('/pgc/player/web/playurl');
+                            log('//pgc/player/web/v2/playurl');
                             // debugger
                             container.__redirect = true; // 标记该请求被重定向
                             if (isBangumiPage()) {
@@ -3837,7 +3837,7 @@ var css$1 = "#balh-settings {\n  font-size: 12px;\n  color: #6d757a; }\n  #balh-
                                             message: "0",
                                         };
                                     }
-                                    log('/pgc/player/web/playurl', 'proxy(redirect)', data);
+                                    log('//pgc/player/web/v2/playurl', 'proxy(redirect)', data);
                                     return data
                                 })
                         }
@@ -3892,7 +3892,8 @@ var css$1 = "#balh-settings {\n  font-size: 12px;\n  color: #6d757a; }\n  #balh-
                             });
                     } else if (param.url.match(RegExps.urlPath('/player/web_api/playurl')) // 老的番剧页面playurl接口
                         || param.url.match(RegExps.urlPath('/player/web_api/v2/playurl')) // 新的番剧页面playurl接口
-                        || param.url.match(RegExps.url('api.bilibili.com/pgc/player/web/playurl')) // 新的番剧页面playurl接口
+                        || param.url.match(RegExps.url('api.bilibili.com/pgc/player/web/playurl'))
+                        || param.url.match(RegExps.url('api.bilibili.com//pgc/player/web/v2/playurl')) // 新的番剧页面playurl接口
                         || (balh_config.enable_in_av && param.url.match(RegExps.url('interface.bilibili.com/v2/playurl'))) // 普通的av页面playurl接口
                     ) {
                         // 新playrul:
@@ -3900,7 +3901,7 @@ var css$1 = "#balh-settings {\n  font-size: 12px;\n  color: #6d757a; }\n  #balh-
                         // 2. 成功时, 返回的结果放到了result中: {"code":0,"message":"success","result":{}}
                         // 3. 失败时, 返回的结果没变
                         let isNewPlayurl;
-                        if (isNewPlayurl = param.url.match(RegExps.url('api.bilibili.com/pgc/player/web/playurl'))) {
+                        if (isNewPlayurl = param.url.match(RegExps.url('api.bilibili.com//pgc/player/web/v2/playurl'))? param.url.match(RegExps.url('api.bilibili.com//pgc/player/web/v2/playurl')):param.url.match(RegExps.url('api.bilibili.com/pgc/player/web/playurl'))) {
                             if (param.data) {
                                 param.url += `?${Object.keys(param.data).map(key => `${key}=${param.data[key]}`).join('&')}`;
                                 param.data = undefined;
@@ -4139,7 +4140,7 @@ var css$1 = "#balh-settings {\n  font-size: 12px;\n  color: #6d757a; }\n  #balh-
             }
 
             function isAreaLimitForPlayUrl(json) {
-                return (json.errorcid && json.errorcid == '8986943') || (json.durl && json.durl.length === 1 && json.durl[0].length === 15126 && json.durl[0].size === 124627);
+                return (json.errorcid && json.errorcid == '8986943') || (json.durl && json.durl.length === 1 && json.durl[0].length === 15126 && json.durl[0].size === 124627) || !json.video_info;
             }
 
             var bilibiliApis = (function () {
