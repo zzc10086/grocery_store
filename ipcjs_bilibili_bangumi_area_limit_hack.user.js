@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除B站区域限制
 // @namespace    https://github.com/ipcjs
-// @version      8.4.3.2
+// @version      8.4.3.3
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/ipcjs/bilibili-helper/blob/user.js/packages/unblock-area-limit/README.md
@@ -4140,7 +4140,7 @@ var css$1 = "#balh-settings {\n  font-size: 12px;\n  color: #6d757a; }\n  #balh-
             }
 
             function isAreaLimitForPlayUrl(json) {
-                return (json.errorcid && json.errorcid == '8986943') || (json.durl && json.durl.length === 1 && json.durl[0].length === 15126 && json.durl[0].size === 124627) || !json.video_info;
+                return (json.errorcid && json.errorcid == '8986943') || (json.durl && json.durl.length === 1 && json.durl[0].length === 15126 && json.durl[0].size === 124627) || (!json.video_info && json.rights );
             }
 
             var bilibiliApis = (function () {
