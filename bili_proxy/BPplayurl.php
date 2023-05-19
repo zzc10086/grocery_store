@@ -3,6 +3,7 @@
 /* Config */
 
 $upstream_pc_url = 'https://api.bilibili.com/pgc/player/web/playurl';
+$upstream_pc_url_v2 = 'https://api.bilibili.com//pgc/player/web/v2/playurl';
 $upstream_app_url = 'https://api.bilibili.com/pgc/player/api/playurl';
 $upstream_pc_search_url = 'https://api.bilibili.com/x/web-interface/search/type';
 $timeout = 5; // seconds
@@ -76,7 +77,11 @@ elseif(substr_count($request_uri, 'playurl') != 0) {
     if (substr_count($request_query, 'platform=android') != 0) {
         $url = $upstream_app_url.'?'.$request_query;
         curl_setopt($ch, CURLOPT_USERAGENT, 'Bilibili Freedoooooom/MarkII');
-    } else {
+	   //新版本的视频接口
+    }elseif(substr_count($request_uri, '/v2/playurl') != 0 ) {
+		      $url = $upstream_pc_url_v2.'?'.$request_query;
+        curl_setopt($ch, CURLOPT_REFERER, $req_referer);
+	    }else {
         $url = $upstream_pc_url.'?'.$request_query;
         curl_setopt($ch, CURLOPT_REFERER, $req_referer);
     }
