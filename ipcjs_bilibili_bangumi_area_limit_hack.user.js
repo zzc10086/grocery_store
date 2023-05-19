@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         解除B站区域限制
-// @namespace    http://tampermonkey.net/
-// @version      8.4.0.1
+// @namespace    https://github.com/ipcjs
+// @version      8.4.3.1
 // @description  通过替换获取视频地址接口的方式, 实现解除B站区域限制; 只对HTML5播放器生效;
 // @author       ipcjs
 // @supportURL   https://github.com/ipcjs/bilibili-helper/blob/user.js/packages/unblock-area-limit/README.md
@@ -177,9 +177,6 @@ function scriptSource(invokeBy) {
     const FALSE = '';
     const r = {
         html: {},
-        css: {
-            settings: '#balh-settings {font-size: 12px;color: #6d757a;}  #balh-settings h1 {color: #161a1e}  #balh-settings a {color: #00a1d6;}  #balh-settings a:hover {color: #f25d8e}  #balh-settings input {margin-left: 3px;margin-right: 3px;}  @keyframes balh-settings-bg { from {background: rgba(0, 0, 0, 0)} to {background: rgba(0, 0, 0, .7)} }  #balh-settings label {width: 100%;display: inline-block;cursor: pointer}  #balh-settings label:after {content: "";width: 0;height: 1px;background: #4285f4;transition: width .3s;display: block}  #balh-settings label:hover:after {width: 100%}  form {margin: 0}  #balh-settings input[type="radio"] {-webkit-appearance: radio;-moz-appearance: radio;appearance: radio;}  #balh-settings input[type="checkbox"] {-webkit-appearance: checkbox;-moz-appearance: checkbox;appearance: checkbox;} ',
-        },
         attr: {},
         url: {
             issue: 'https://github.com/ipcjs/bilibili-helper/issues',
@@ -761,6 +758,7 @@ function scriptSource(invokeBy) {
         anime_ss_m: () => location.href.includes('m.bilibili.com/bangumi/play/ss'),
         new_bangumi: () => location.href.includes('www.bilibili.com/bangumi'),
         watchroom: () => location.href.includes("www.bilibili.com/watchroom"),
+		home: () => location.hostname === 'www.bilibili.com' && location.pathname === '/',
         get ssId() {
             var _a, _b;
             return (_b = (_a = window.__INITIAL_STATE__) === null || _a === void 0 ? void 0 : _a.mediaInfo) === null || _b === void 0 ? void 0 : _b.ssId;
@@ -1132,9 +1130,9 @@ function scriptSource(invokeBy) {
             };
             // 填充音频流数据
             origin.data.video_info.dash_audio.forEach((audio) => {
-                audio.backupUrl = [];
-                audio.backup_url = [];
-                audio.base_url = audio.base_url.replace('http://', 'https://');
+                audio.backupUrl = audio.backup_url;
+                audio.backup_url = audio.backup_url;
+                audio.base_url = audio.base_url.includes(':8000') ? audio.backup_url[0] : audio.base_url;
                 audio.baseUrl = audio.base_url;
                 dash.audio.push(audio);
             });
@@ -1149,9 +1147,9 @@ function scriptSource(invokeBy) {
                 accept_description.push(stream.stream_info.new_description);
                 // 只加入有视频链接的数据
                 if (stream.dash_video && stream.dash_video.base_url) {
-                    stream.dash_video.backupUrl = [];
-                    stream.dash_video.backup_url = [];
-                    stream.dash_video.base_url = stream.dash_video.base_url.replace('http://', 'https://');
+                    stream.dash_video.backupUrl = stream.dash_video.backup_url;
+                    stream.dash_video.backup_url = stream.dash_video.backup_url;
+                    stream.dash_video.base_url = stream.dash_video.base_url.includes(':8000') ? stream.dash_video.backup_url[0] : stream.dash_video.base_url;
                     stream.dash_video.baseUrl = stream.dash_video.base_url;
                     stream.dash_video.id = stream.stream_info.quality;
                     dash_video.push(stream.dash_video);
@@ -2538,6 +2536,7 @@ function scriptSource(invokeBy) {
         isLoginBiliBili,
     };
 
+var css$1 = "#balh-settings {\n  font-size: 12px;\n  color: #6d757a; }\n  #balh-settings h1 {\n    color: #161a1e; }\n  #balh-settings a {\n    color: #00a1d6; }\n  #balh-settings a:hover {\n    color: #f25d8e; }\n  #balh-settings input {\n    margin-left: 3px;\n    margin-right: 3px; }\n  #balh-settings label {\n    width: 100%;\n    display: inline-block;\n    cursor: pointer; }\n  #balh-settings label:after {\n    content: \"\";\n    width: 0;\n    height: 1px;\n    background: #4285f4;\n    transition: width .3s;\n    display: block; }\n  #balh-settings label:hover:after {\n    width: 100%; }\n  #balh-settings form {\n    margin: 0; }\n  #balh-settings input[type=\"radio\"] {\n    appearance: radio; }\n  #balh-settings input[type=\"checkbox\"] {\n    appearance: checkbox; }\n\n@keyframes balh-settings-bg {\n  from {\n    background: rgba(0, 0, 0, 0); }\n  to {\n    background: rgba(0, 0, 0, 0.7); } }\n";
     const balh_feature_runPing = function () {
         const pingOutput = document.getElementById('balh_server_ping');
         if (!pingOutput) {
@@ -2767,7 +2766,7 @@ function scriptSource(invokeBy) {
         let customTHServerCheckText;
         var settingsDOM = createElement('div', { id: 'balh-settings', style: { position: 'fixed', top: 0, bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,.7)', animationName: 'balh-settings-bg', animationDuration: '.5s', zIndex: 10000, cursor: 'pointer' }, event: { click: function (e) { if (e.target === this)
                     util_ui_msg.close(), document.body.style.overflow = '', this.remove(); } } }, [
-            createElement('style', {}, [createElement('text', r.css.settings)]),
+            createElement('style', {}, [createElement('text', css$1)]),
             createElement('div', { style: { position: 'absolute', background: '#FFF', borderRadius: '10px', padding: '20px', top: '50%', left: '50%', width: '600px', transform: 'translate(-50%,-50%)', cursor: 'default' } }, [
                 createElement('h1', {}, [createElement('text', `${GM_info.script.name} v${GM_info.script.version} 参数设置`)]),
                 createElement('br'),
@@ -2948,6 +2947,13 @@ function scriptSource(invokeBy) {
         }
     }
 
+    var css = ".adblock-tips {\n  display: none !important; }\n";
+
+    function hide_adblock_tips() {
+        if (util_page.home()) {
+            document.head.appendChild(createElement('style', { id: 'balh-hide_adblock_tips' }, [createElement('text', css)]));
+        }
+    }
     function injectFetch() {
         // 当前未替换任何内容...
         const originFetch = window.fetch;
@@ -3436,6 +3442,7 @@ function scriptSource(invokeBy) {
 
         area_limit_for_vue();
 
+		hide_adblock_tips();
         ((function () {
             if (isClosed()) return
             injectFetch();
@@ -3704,7 +3711,7 @@ function scriptSource(invokeBy) {
                                     return json
                                 }
                             }
-                        } else if (url.match(RegExps.url('i0.hdslb.com/bfs/subtitle'))) {
+                        } else if (url.match(RegExps.urlPath('/bfs/subtitle/'))) {
                             log('/bfs/subtitle', url);
                             const parsedUrl = new URL(url);
                             const translate = parsedUrl.searchParams.get('translate') == '1';
