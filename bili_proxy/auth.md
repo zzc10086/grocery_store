@@ -1,7 +1,9 @@
 # 手动给代理服务器授权
 目前油猴脚本的授权功能依旧可用，此处贴出手动授权流程
 
-### 1.使用ACCESS_KEY方式
+### 1.使用ACCESS_KEY方式(已失效)
+TIPS:即便使用COOKIE方式授权,只要请求参数带ACCESS_KEY时默认返回480P画质
+
 1. B站正常登录账号
 
 2. 打开B站给MCBSS的[第三方授权接口](https://passport.bilibili.com/login/app/third?appkey=27eb53fc9058f8c3&api=https%3A%2F%2Fwww.mcbbs.net%2Ftemplate%2Fmcbbs%2Fimage%2Fspecial_photo_bg.png&sign=04224646d1fea004e79606d3b038c84a)
