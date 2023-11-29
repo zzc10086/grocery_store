@@ -1,4 +1,4 @@
- <?php
+<?php
 
 use RingCentral\Psr7\Response;
 /*
@@ -24,6 +24,7 @@ function handler($request, $context): Response{
     $upstream_pc_url_v2 = 'https://api.bilibili.com//pgc/player/web/v2/playurl';
     $upstream_app_url = 'https://api.bilibili.com/pgc/player/api/playurl';
     $upstream_pc_search_url = 'https://api.bilibili.com/x/web-interface/search/type';
+	$upstream_pc_qr_login = 'https://passport.bilibili.com/x/passport-login/web/qrcode/poll';
     $timeout = 5; // seconds
 
 
@@ -55,7 +56,11 @@ function handler($request, $context): Response{
     }
 
     //判断请求接口
-    if (substr_count($request_uri, '/search/type') != 0) {
+	if (substr_count($request_uri, '/auth/set_cookie_qrcode') != 0) {
+		$url = $upstream_pc_qr_login.'?'.$request_query;
+		curl_setopt($ch, CURLOPT_REFERER, $req_referer);
+	}
+    elseif (substr_count($request_uri, '/search/type') != 0) {
         //搜索接口强制需要buvid3这个cookie,应该与账号无关,访问https://api.bilibili.com/x/frontend/finger/spi可直接获取
         if (substr_count($request_query, 'buvid3') != 0)
             array_push($headers, "cookie: buvid3=".$queries['buvid3']);
@@ -122,6 +127,9 @@ function handler($request, $context): Response{
             if (strpos($response_header, "Access-Control-Allow-Credentials") !== false) {
                 unset($response_headers[$n]);
             }
+			if (strpos($response_header, "Set-Cookie") !== false) {
+            $response_headers[$n] = str_replace("Domain=bilibili.com","Secure;samesite=none;Domain=".$request->getHeaderLine('Host'),$response_headers[$n]);
+			}
         }
         unset($response_header);
 
@@ -129,7 +137,12 @@ function handler($request, $context): Response{
         foreach($response_headers as $header_string) {
             $header_tmp = explode(': ', $header_string, 2);
             if (count($header_tmp) == 2) {
-                $header[$header_tmp[0]] = trim($header_tmp[1]);
+                //在Psr7中header是array,key是唯一的,但是set-cookie会存在多个,导致覆盖问题.保留SESSDATA
+                if ($header_tmp[0] != "Set-Cookie" ) {
+                    $header[$header_tmp[0]] = trim($header_tmp[1]);
+                }elseif (substr_count($header_tmp[1], 'SESSDATA') != 0) {
+                    $header[$header_tmp[0]] = trim($header_tmp[1]);
+                }
             }
         }
 
