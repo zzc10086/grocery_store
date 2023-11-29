@@ -9,6 +9,7 @@
 // @compatible   firefox
 // @license      MIT
 // @require      https://static.hdslb.com/js/md5.js
+// @require      https://static.runoob.com/assets/qrcode/qrcode.min.js
 // @include      *://search.bilibili.com/*
 // @include      *://www.bilibili.com/video/av*
 // @include      *://www.bilibili.com/video/BV*
@@ -2485,26 +2486,39 @@ function scriptSource(invokeBy) {
         balh_auth_window.document.title = 'BALH - 授权';
         balh_auth_window.document.body.innerHTML = '<meta charset="UTF-8" name="viewport" content="width=device-width">正在获取授权，请稍候……';
         window.balh_auth_window = balh_auth_window;
-        window.$.ajax('https://passport.bilibili.com/login/app/third?appkey=27eb53fc9058f8c3&api=https%3A%2F%2Fwww.mcbbs.net%2Ftemplate%2Fmcbbs%2Fimage%2Fspecial_photo_bg.png&sign=04224646d1fea004e79606d3b038c84a', {
-            xhrFields: { withCredentials: true },
-            type: 'GET',
-            dataType: 'json',
-            success: (data) => {
-                if (data.data.has_login) {
-                    balh_auth_window.document.body.innerHTML = '<meta charset="UTF-8" name="viewport" content="width=device-width">正在跳转……';
-                    balh_auth_window.location.href = data.data.confirm_uri;
+        window.fetch('https://passport.bilibili.com/x/passport-login/web/qrcode/generate?source=main-fe-header').then(resp=> {return resp.json()}).then(resp=>{
+            if (resp.code == 0) {
+                let qr_auth_img = createElement('div');
+                qr_auth_img.id='qrcode';
+                let qr_auth_button = createElement("button");
+                qr_auth_button.innerHTML = '已完成授权';
+                qr_auth_button.onclick = function()
+                {
+                    window.fetch(balh_config.server_custom +"/auth/set_cookie_qrcode?qrcode_key="+ resp.data.qrcode_key,{credentials: "include"})//返回包含refresh_token,应该可以长期使用,以后再看吧
+                    .then(resp => {
+                        return resp.json();
+                    })
+                    .then(resp => {
+                        resp.code ==0 && resp.data.code == 0 ? balh_auth_window.alert('获取授权cookies完成'):balh_auth_window.alert(resp.data.message);
+                        balh_auth_window.window.close();
+                    })
+                    .catch(e => {alert('获取授权cookies失败');})
                 }
-                else {
-                    balh_auth_window.close();
-                    ui.alert('必须登录B站才能正常授权', () => {
-                        location.href = 'https://passport.bilibili.com/login';
-                    });
-                }
-            },
-            error: (e) => {
-                alert('error');
+                balh_auth_window.document.body.innerHTML = '<meta charset="UTF-8" name="viewport" content="width=device-width">扫码授权后点击下方按钮';
+                balh_auth_window.document.body.appendChild(qr_auth_img);
+                new QRCode(balh_auth_window.document.getElementById("qrcode"), resp.data.url);
+                balh_auth_window.document.body.appendChild(qr_auth_button);
             }
-        });
+            else {
+                balh_auth_window.close();
+                ui.alert('必须登录B站才能正常授权', () => {
+                    location.href = 'https://passport.bilibili.com/login';
+                });
+            }
+        }).catch(e => {
+                alert('获取授权二维码失败');
+            }
+        );
     }
     function showLogout() {
         ui.popFrame(balh_config.server_custom + '/login?act=logout');
