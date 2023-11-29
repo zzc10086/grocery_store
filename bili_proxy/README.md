@@ -20,3 +20,13 @@
 
 ## 手动授权流程
 [跳转链接](https://github.com/zzc10086/grocery_store/blob/master/bili_proxy/auth.md)
+
+## 扫码授权
+设置--账号授权---APP扫二维码授权登录-----点击已完成授权按钮即可
+###### 具体实现
+1.使用浏览器的扫码登录接口`https://passport.bilibili.com/x/passport-login/web/qrcode/generate?source=main-fe-header`获取`qrcode_key`和`url`
+
+2.将`url`转为二维码,使用手机扫码授权
+
+3.将`qrcode_key`通过`/auth/set_cookie_qrcode`传给代理PHP,代理用`https://passport.bilibili.com/x/passport-login/web/qrcode/poll?qrcode_key=xxxxx`拿到cookie后写入浏览器本地
+
