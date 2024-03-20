@@ -2,7 +2,6 @@
 目前油猴脚本的授权功能依旧可用，此处贴出手动授权流程
 
 ### 1.使用ACCESS_KEY方式(已失效)
-TIPS:即便使用COOKIE方式授权,只要请求参数带ACCESS_KEY时默认返回480P画质
 
 1. B站正常登录账号
 
@@ -22,3 +21,5 @@ TIPS:即便使用COOKIE方式授权,只要请求参数带ACCESS_KEY时默认返�
 手动为代理服务器添加SESSDATA这个cookie,并且勾选Secure,把SameSite设置None应该就能授权给代理服务器，具体流程自行摸索
 
 **由于B站给SESSDATA配置了HttpOnly，js无法读取，这种方法最好应该也只能做到半自动授权**
+
+### 3.使用TV客户端的token
